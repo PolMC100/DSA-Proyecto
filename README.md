@@ -13,6 +13,7 @@ Compilar con `mvn compile` (requiere JDK 25 o superior y Maven).
 En IntelliJ IDEA, abrir el archivo `pom.xml` como proyecto Maven.
 
 
-Esto lo tiene que hacer el POL
 
 - [x] Tarea 1
+- [x] Tarea 2
+- [x] Tarea 3
