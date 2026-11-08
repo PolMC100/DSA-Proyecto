@@ -13,7 +13,8 @@ Compilar con `mvn compile` (requiere JDK 25 o superior y Maven).
 En IntelliJ IDEA, abrir el archivo `pom.xml` como proyecto Maven.
 
 
+**- Tareas para el 12/11:**
 
-- [x] Tarea 1
-- [x] Tarea 2
-- [x] Tarea 3
+- [x] Tarea 1: Idea del juego
+- [x] Tarea 2: Diagrama de clases
+- [x] Tarea 3: PPT
