@@ -155,13 +155,13 @@ interactiva con liberación del puerto.
 
 ### Tiffany — resultados, marcador y recompensas
 
-- [ ] Implementar `ResultadoJugador` y `Scoreboard`, con un único resultado por jugador y partida.
-- [ ] Definir la interfaz del gestor de resultados e implementar su versión en memoria.
-- [ ] Actualizar bajas y muertes de los participantes y permitir consultar el marcador durante la partida.
-- [ ] Ordenar la clasificación con el criterio de puntuación y desempate acordado.
-- [ ] Calcular la experiencia y los créditos ganados y aplicar las recompensas al jugador una sola vez.
-- [ ] Conservar los resultados de las partidas finalizadas en memoria para su consulta.
-- [ ] Probar empates, resultados duplicados y la repetición del cierre de una partida sin duplicar recompensas.
+- [x] Implementar `ResultadoJugador` y `Scoreboard`, con un único resultado por jugador y partida.
+- [x] Definir la interfaz del gestor de resultados e implementar su versión en memoria.
+- [x] Actualizar bajas y muertes de los participantes y permitir consultar el marcador durante la partida.
+- [x] Ordenar la clasificación con el criterio de puntuación y desempate acordado.
+- [x] Calcular la experiencia y los créditos ganados y aplicar las recompensas al jugador una sola vez.
+- [x] Conservar los resultados de las partidas finalizadas en memoria para su consulta.
+- [x] Probar empates, resultados duplicados y la repetición del cierre de una partida sin duplicar recompensas.
 
 ### Azahara — API REST e integración
 
