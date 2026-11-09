@@ -69,7 +69,6 @@ representan lo ganado en una partida concreta.
 
 ## Estructura de desarrollo
 
-<<<<<<< HEAD
 El servidor utilizará Jersey y Grizzly, con Swagger para documentar
 la API, Log4j2 para las trazas y JUnit para las pruebas.
 
@@ -94,9 +93,9 @@ src/
     └── resources/                  # Datos y configuración de pruebas
 ```
 
-La primera versión utilizará gestores singleton y almacenamiento en memoria. 
+La primera versión utilizará gestores singleton y almacenamiento en memoria.
 
-## To-do 
+## To-do
 
 ### Reparto de responsabilidades del backend
 
@@ -173,9 +172,3 @@ La primera versión utilizará gestores singleton y almacenamiento en memoria.
 - [x] Idea del juego — todo el equipo.
 - [ ] To-do completo
 - [ ] PPT — coordina el integrante 6; cada integrante aporta la explicación de su área y todo el equipo revisa la presentación.
-=======
-- [x] Tarea 1: Idea del juego
-- [ ] Tarea 2: Diagrama de clases
-- [ ] Tarea 3: PPT
-- [ ] Tarea 4: 
->>>>>>> 7a3414bca06448a29968509a0335792d078fbf9d
