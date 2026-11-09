@@ -1,5 +1,5 @@
 # DSA-Proyecto
-Proyecto Java 25 con Maven. Actualmente no tiene dependencias; las del servidor REST y las pruebas se incorporarán durante el desarrollo.
+Proyecto Java 25 con Maven, Jersey y Grizzly, documentación Swagger, trazas Log4j2 y pruebas JUnit.
 
 ## Configuración del proyecto
 
@@ -69,7 +69,7 @@ representan lo ganado en una partida concreta.
 
 ## Estructura de desarrollo
 
-El servidor utilizará Jersey y Grizzly, con Swagger para documentar
+El servidor utiliza Jersey y Grizzly, con Swagger para documentar
 la API, Log4j2 para las trazas y JUnit para las pruebas.
 
 ```text
@@ -80,11 +80,11 @@ src/
 ├── main/
 │   ├── java/edu/upc/dsa/
 │   │   ├── Main.java                # Arranque del servidor Grizzly
-│   │   ├── MyExceptionMapper.java   # Conversión de excepciones a respuestas HTTP
+│   │   ├── MyExceptionMapper.java   # Pendiente: conversión de excepciones (Azahara)
 │   │   ├── domain/
 │   │   │   ├── models/              # Jugador, Arma, Granada, Partida, etc.
 │   │   │   └── repository/          # Interfaces *Manager e implementaciones *ManagerImpl
-│   │   ├── services/               # Recursos REST que llaman a los gestores
+│   │   ├── services/               # StatusService, SwaggerService y futuros recursos del juego
 │   │   └── util/                   # Adaptadores y utilidades necesarios
 │   └── resources/
 │       └── log4j2.properties
@@ -93,7 +93,6 @@ src/
     └── resources/                  # Datos y configuración de pruebas
 ```
 
-La primera versión utilizará gestores singleton y almacenamiento en memoria.
 
 ## To-do
 
@@ -110,12 +109,20 @@ La primera versión utilizará gestores singleton y almacenamiento en memoria.
 
 ### Pol — base del proyecto y arquitectura
 
-- [ ] Preparar los paquetes `edu.upc.dsa` siguiendo la estructura de referencia.
-- [ ] Configurar en `pom.xml` Jersey, Grizzly, serialización JSON, Swagger, Log4j2, JUnit y el arranque con Maven.
-- [ ] Implementar `Main` con arranque y parada del servidor, registro de servicios y publicación de `public/swagger`.
-- [ ] Configurar `log4j2.properties` y comprobar que se registran operaciones y errores.
+- [x] Preparar los paquetes `edu.upc.dsa` siguiendo la estructura de referencia.
+- [x] Configurar en `pom.xml` Jersey, Grizzly, serialización JSON, Swagger, Log4j2, JUnit y el arranque con Maven.
+- [x] Implementar `Main` con arranque y parada del servidor, registro de servicios y publicación de `public/swagger`.
+- [x] Configurar `log4j2.properties` y comprobar que se registran operaciones y errores.
 - [ ] Coordinar el diagrama de clases con los modelos y contratos aportados por el equipo.
-- [ ] Documentar los comandos de compilación, pruebas y ejecución, y comprobarlos desde una copia limpia del proyecto.
+- [x] Documentar los comandos de compilación, pruebas y ejecución, y comprobarlos desde una copia limpia del proyecto.
+
+El diagrama queda pendiente de los modelos y contratos de Cristian, Gur, Franklin
+y Tiffany. La infraestructura ya permite que cada módulo se desarrolle y pruebe
+siguiendo la estructura acordada.
+
+La base se ha verificado con JDK 25 desde una copia sin resultados de compilación
+previos: seis pruebas HTTP, arranque con Maven, acceso a estado y Swagger, y parada
+interactiva con liberación del puerto.
 
 ### Cristian — jugadores y progresión
 
