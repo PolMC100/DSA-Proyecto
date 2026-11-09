@@ -72,3 +72,4 @@ representan lo ganado en una partida concreta.
 - [x] Tarea 1: Idea del juego
 - [ ] Tarea 2: Diagrama de clases
 - [ ] Tarea 3: PPT
+- [ ] Tarea 4: 
