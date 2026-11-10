@@ -45,9 +45,9 @@ El escenario es el aula de DSA y los jugadores tienen el tamaño de una hormiga.
 | Entidad | Atributos y relaciones | Tipos o ejemplos |
 | --- | --- | --- |
 | Jugador | Nombre, vida, inventario, experiencia, nivel y créditos. | Humano o bot. |
-| Arma | Nombre, munición, cadencia y daño. | Pistola, escopeta, rifle, ametralladora y francotirador. |
-| Granada | Nombre, daño, radio, efecto y duración del efecto. | Fragmentación, humo y flash. |
-| Complemento | Nombre, tipo y efecto. | Chaleco, casco y jetpack. |
+| Arma | Nombre, munición, cadencia, daño, precio y nivelRequerido. | Pistola, escopeta, rifle, ametralladora y francotirador. |
+| Granada | Nombre, daño, radio, efecto, duración del efecto, precio y nivelRequerido. | Fragmentación, humo y flash. |
+| Complemento | Nombre, tipo, efecto, precio y nivelRequerido. | Chaleco, casco y jetpack. |
 | Partida | Marcador, tiempo y jugadores participantes. | Duración de 5 minutos y hasta 10 participantes. |
 | Scoreboard | Colección de resultados de los jugadores de una partida. | Un marcador por partida. |
 | ResultadoJugador | Jugador, partida, bajas (*kills*), muertes, puntuación y créditos ganados. | Un resultado por jugador y partida. |
@@ -135,13 +135,13 @@ interactiva con liberación del puerto.
 
 ### Gur — catálogo, tienda e inventario
 
-- [ ] Implementar `Arma`, `Granada`, `Complemento` e `Inventario` con las relaciones acordadas.
-- [ ] Definir la interfaz del gestor de catálogo y tienda e implementar su versión en memoria.
-- [ ] Preparar un catálogo inicial con precios, estadísticas y requisitos de desbloqueo.
-- [ ] Implementar la consulta del catálogo y la compra desde el menú o durante una partida.
-- [ ] Validar saldo y desbloqueo, descontar créditos y añadir el objeto al inventario como una única operación.
-- [ ] Implementar la consulta del inventario, el equipamiento y el consumo de granadas.
-- [ ] Probar compras válidas, objetos bloqueados, saldo insuficiente y consumo sin unidades disponibles.
+- [x] Implementar `Arma`, `Granada`, `Complemento` e `Inventario` con las relaciones acordadas.
+- [x] Definir la interfaz del gestor de catálogo y tienda e implementar su versión en memoria.
+- [x] Preparar un catálogo inicial con precios, estadísticas y requisitos de desbloqueo.
+- [x] Implementar la consulta del catálogo y la compra desde el menú o durante una partida.
+- [x] Validar saldo y desbloqueo, descontar créditos y añadir el objeto al inventario como una única operación.
+- [x] Implementar la consulta del inventario, el equipamiento y el consumo de granadas.
+- [x] Probar compras válidas, objetos bloqueados, saldo insuficiente y consumo sin unidades disponibles.
 
 ### Franklin — partidas
 
