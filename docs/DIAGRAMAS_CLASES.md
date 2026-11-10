@@ -52,15 +52,18 @@ Esta vista reúne las relaciones entre las entidades; el contenido del inventari
 se detalla en el siguiente diagrama.
 
 ```mermaid
-%%{init: {"theme":"base","themeVariables":{"darkMode":true,"background":"#1b1b1f","primaryColor":"#0d111a","primaryTextColor":"#e6edf3","primaryBorderColor":"#d779ed","secondaryColor":"#0d111a","secondaryTextColor":"#e6edf3","tertiaryColor":"#0d111a","tertiaryTextColor":"#e6edf3","textColor":"#e6edf3","classText":"#e6edf3","lineColor":"#b8bfcc","edgeLabelBackground":"#1b1b1f","noteBkgColor":"#fff7be","noteBorderColor":"#f3c600","noteTextColor":"#26210a"},"themeCSS":"background-color: #1b1b1f; .noteText, .noteText tspan, .node[id^=\"note\"] .nodeLabel, .node[id^=\"note\"] .nodeLabel p { color: #26210a !important; fill: #26210a !important; }","layout":"dagre","class":{"nodeSpacing":60,"rankSpacing":132,"diagramPadding":24,"hideEmptyMembersBox":true},"flowchart":{"nodeSpacing":60,"rankSpacing":132,"curve":"linear"}}}%%
+%%{init: {"theme":"base","themeVariables":{"darkMode":true,"background":"#1b1b1f","primaryColor":"#0d111a","primaryTextColor":"#e6edf3","primaryBorderColor":"#d779ed","secondaryColor":"#0d111a","secondaryTextColor":"#e6edf3","tertiaryColor":"#0d111a","tertiaryTextColor":"#e6edf3","textColor":"#e6edf3","classText":"#e6edf3","lineColor":"#b8bfcc","edgeLabelBackground":"#1b1b1f","noteBkgColor":"#fff7be","noteBorderColor":"#f3c600","noteTextColor":"#26210a"},"themeCSS":"background-color: #1b1b1f; .noteText, .noteText tspan, .node[id^=\"note\"] .nodeLabel, .node[id^=\"note\"] .nodeLabel p { color: #26210a !important; fill: #26210a !important; }","layout":"dagre","class":{"nodeSpacing":60,"rankSpacing":109,"diagramPadding":24,"hideEmptyMembersBox":true},"flowchart":{"nodeSpacing":60,"rankSpacing":109,"curve":"linear"}}}%%
 classDiagram
     direction TB
 
     class Jugador {
-        -String id
+        -String idJugador
         -String nombre
-        -double saldo
+        -boolean bot
+        -int vida
+        -int experiencia
         -int nivel
+        -int creditos
         -Inventario inventario
     }
 
@@ -127,7 +130,7 @@ classDiagram
     ResultadoJugador ..> Participante : idJugador en esa partida
 
     note for Partida "MAX_PARTICIPANTES = 10; DURACION_SEGUNDOS = 300"
-    note for Participante "El estado vivo y la marca bot pertenecen a la<br/>participación en una partida."
+    note for Participante "vivo indica el estado durante la partida;<br/>bot distingue al participante humano del bot."
     style Jugador fill:#0d111a,stroke:#d779ed,stroke-width:2px,color:#e6edf3
     style Inventario fill:#0d111a,stroke:#d779ed,stroke-width:2px,color:#e6edf3
     style Arma fill:#0d111a,stroke:#ff9b40,stroke-width:2px,color:#e6edf3
@@ -144,13 +147,101 @@ classDiagram
   nueve bots. El constructor vacío de `Partida` permite una lista vacía antes de
   inicializarla; `1..10` expresa la regla aplicada por el gestor.
 - Las referencias `idJugador`, `idJugadorHumano` e `idPartida` son cadenas, sin
-  referencias Java a los objetos identificados. Los bots se crean como
-  `Participante`; no se crea un `Jugador` por cada bot.
-- `Jugador` puede tener el inventario a `null` si se usa el constructor vacío.
-  El constructor con parámetros crea un inventario.
+  referencias Java a los objetos identificados. `Jugador.bot` distingue el tipo
+  de perfil y `Participante.bot` el tipo de participante. El gestor de partidas
+  crea los bots como `Participante`, sin registrar sus perfiles en `JugadorManager`.
+- Los constructores de alta y el constructor vacío de `Jugador` inicializan el
+  inventario. La relación permite `0..1` porque `setInventario(null)` sigue siendo
+  válido y el constructor de copia conserva ese valor.
+- `idJugador` y `creditos` son los datos almacenados en el perfil. `getId`/`setId`
+  y `getSaldo`/`setSaldo` son alias de compatibilidad con la tienda, sin duplicar
+  atributos. El alias de saldo usa `double`, pero solo admite valores enteros
+  dentro del rango de `int`.
 - El módulo de resultados mantiene como máximo un `Scoreboard` por identificador
   de partida y crea un `ResultadoJugador` por participante al inicializarlo.
   `Partida` no contiene un atributo `Scoreboard`.
+
+### 1.1. Gestión de jugadores y progresión
+
+Paquete: [`domain.repository`](../src/main/java/edu/upc/dsa/domain/repository).
+El gestor mantiene perfiles humanos y bots, valida los datos y actualiza
+experiencia, niveles y créditos. El modelo y sus relaciones se muestran en la
+vista anterior.
+
+```mermaid
+%%{init: {"theme":"base","themeVariables":{"darkMode":true,"background":"#1b1b1f","primaryColor":"#0d111a","primaryTextColor":"#e6edf3","primaryBorderColor":"#d779ed","secondaryColor":"#0d111a","secondaryTextColor":"#e6edf3","tertiaryColor":"#0d111a","tertiaryTextColor":"#e6edf3","textColor":"#e6edf3","classText":"#e6edf3","lineColor":"#b8bfcc","edgeLabelBackground":"#1b1b1f","noteBkgColor":"#fff7be","noteBorderColor":"#f3c600","noteTextColor":"#26210a"},"themeCSS":"background-color: #1b1b1f; .noteText, .noteText tspan, .node[id^=\"note\"] .nodeLabel, .node[id^=\"note\"] .nodeLabel p { color: #26210a !important; fill: #26210a !important; }","layout":"dagre","class":{"nodeSpacing":131,"rankSpacing":133,"diagramPadding":24,"hideEmptyMembersBox":true,"htmlLabels":false},"flowchart":{"nodeSpacing":131,"rankSpacing":133,"curve":"linear"},"htmlLabels":false}}%%
+classDiagram
+    direction TB
+
+    class JugadorManager {
+        <<interface>>
+        +registrarJugador(String idJugador, String nombre, boolean bot) Jugador
+        +getJugador(String idJugador) Jugador
+        +getJugadores() List~Jugador~
+        +existeJugadorHumano(String idJugador) boolean
+        +sumarExperienciaYCreditos(String idJugador, int experiencia, int creditos) void
+        +getNivel(String idJugador) int
+        +getCreditos(String idJugador) int
+        +cumpleNivelRequerido(String idJugador, int nivelRequerido) boolean
+        +descontarCreditos(String idJugador, int precio) void
+        +aplicarRecompensaPartida(String idPartida, String idJugador, int experiencia, int creditos) boolean
+        +setExperienciaPorNivel(int experienciaPorNivel) void
+        +getExperienciaPorNivel() int
+        +limpiar() void
+    }
+
+    class JugadorManagerImpl {
+        +int EXPERIENCIA_POR_NIVEL_PROVISIONAL$
+        -JugadorManager instance$
+        -HashMap jugadores
+        -HashMap recompensasAplicadas
+        -int experienciaPorNivel
+        +getInstance() JugadorManager$
+    }
+
+    class Jugador
+    class DatosInvalidosException
+    class JugadorDuplicadoException
+    class JugadorNotFoundException
+    class SaldoInsuficienteException
+
+    JugadorManager <|.. JugadorManagerImpl
+    JugadorManagerImpl "1" o-- "0..*" Jugador : perfiles por idJugador
+    JugadorManager ..> DatosInvalidosException : declara
+    JugadorManager ..> JugadorDuplicadoException : declara
+    JugadorManager ..> JugadorNotFoundException : declara
+    JugadorManager ..> SaldoInsuficienteException : declara
+
+    style JugadorManager fill:#0d111a,stroke:#d779ed,stroke-width:2px,color:#e6edf3
+    style JugadorManagerImpl fill:#0d111a,stroke:#d779ed,stroke-width:2px,color:#e6edf3
+    style Jugador fill:#0d111a,stroke:#d779ed,stroke-width:2px,color:#e6edf3
+    style DatosInvalidosException fill:#0d111a,stroke:#ff7b86,stroke-width:2px,color:#e6edf3
+    style JugadorDuplicadoException fill:#0d111a,stroke:#ff7b86,stroke-width:2px,color:#e6edf3
+    style JugadorNotFoundException fill:#0d111a,stroke:#ff7b86,stroke-width:2px,color:#e6edf3
+    style SaldoInsuficienteException fill:#0d111a,stroke:#ff7b86,stroke-width:2px,color:#e6edf3
+```
+
+| Atributo del gestor | Tipo y contenido |
+| --- | --- |
+| `jugadores` | `HashMap<String, Jugador>`: perfiles por identificador. |
+| `recompensasAplicadas` | `HashMap<String, HashSet<String>>`: identificadores de jugadores que ya cobraron cada partida. |
+
+La implementación es Singleton y sus operaciones públicas están sincronizadas.
+Las altas y consultas devuelven copias de los perfiles y de las colecciones del
+inventario; los objetos del catálogo conservan su identidad compartida. Cambiar
+una copia no modifica el perfil guardado en el gestor.
+
+El alta empieza con experiencia y créditos cero, nivel 1 y vida base 100. La regla
+provisional es `nivel = 1 + experiencia / experienciaPorNivel`, con división
+entera y `EXPERIENCIA_POR_NIVEL_PROVISIONAL = 100`.
+`setExperienciaPorNivel` cambia ese paso y recalcula los niveles existentes.
+
+`descontarCreditos` comprueba y descuenta en la misma operación.
+`aplicarRecompensaPartida` actualiza experiencia y créditos una sola vez por par
+partida/jugador: devuelve `true` al aplicar y `false` al repetir. La operación
+`sumarExperienciaYCreditos` no evita duplicados. La validación de que la partida
+existe, ha finalizado y contiene al jugador corresponde al módulo que solicita
+la recompensa; el gestor solo guarda sus identificadores.
 
 ## 2. Inventario y objetos del catálogo
 
@@ -279,7 +370,7 @@ classDiagram
     CatalogoManagerImpl "1" o-- "0..*" Arma : armasCatalogo
     CatalogoManagerImpl "1" o-- "0..*" Granada : granadasCatalogo
     CatalogoManagerImpl "1" o-- "0..*" Complemento : complementosCatalogo
-    TiendaManagerImpl ..> Jugador : consulta nivel y modifica<br/>saldo
+    TiendaManagerImpl ..> Jugador : consulta nivel y modifica<br/>creditos mediante saldo
     TiendaManagerImpl ..> Inventario : añade la compra
     TiendaManager ..> DatosInvalidosException : declara
 
@@ -298,6 +389,10 @@ classDiagram
 Los tres mapas del catálogo y los devueltos por la tienda tienen claves `String`
 (nombre del objeto) y valores `Arma`, `Granada` o `Complemento`, respectivamente.
 Ambas implementaciones usan el patrón Singleton.
+
+La tienda conserva las llamadas `getSaldo` y `setSaldo`, que ahora operan sobre
+`Jugador.creditos`. Todavía recibe un `Jugador` y modifica ese objeto directamente;
+no invoca `JugadorManager`.
 
 Las compras devuelven `0` si se completan, `1` por nivel insuficiente, `2` por saldo
 insuficiente y `3` si el arma o complemento ya está en el inventario. Un jugador
@@ -516,7 +611,7 @@ classDiagram
     JugadorService ..> JugadorDTO : recibe y devuelve
     TiendaService ..> CompraDTO : recibe y devuelve
 
-    note for JugadorService "Implementación provisional con datos simulados."
+    note for JugadorService "Datos simulados; aún no utiliza<br/>el nuevo JugadorManager."
     note for TiendaService "Devuelve la solicitud; todavía no ejecuta la<br/>compra."
     note for ResultadoJugadorDTO "Definido, pero aún no utilizado por los<br/>servicios."
     style JugadorService fill:#0d111a,stroke:#d779ed,stroke-width:2px,color:#e6edf3
@@ -659,7 +754,7 @@ classDiagram
 ### 7.3. Jerarquía de excepciones
 
 ```mermaid
-%%{init: {"theme":"base","themeVariables":{"darkMode":true,"background":"#1b1b1f","primaryColor":"#0d111a","primaryTextColor":"#e6edf3","primaryBorderColor":"#d779ed","secondaryColor":"#0d111a","secondaryTextColor":"#e6edf3","tertiaryColor":"#0d111a","tertiaryTextColor":"#e6edf3","textColor":"#e6edf3","classText":"#e6edf3","lineColor":"#b8bfcc","edgeLabelBackground":"#1b1b1f","noteBkgColor":"#fff7be","noteBorderColor":"#f3c600","noteTextColor":"#26210a"},"themeCSS":"background-color: #1b1b1f; .noteText, .noteText tspan, .node[id^=\"note\"] .nodeLabel, .node[id^=\"note\"] .nodeLabel p { color: #26210a !important; fill: #26210a !important; }","layout":"dagre","class":{"nodeSpacing":60,"rankSpacing":154,"diagramPadding":24,"hideEmptyMembersBox":true},"flowchart":{"nodeSpacing":60,"rankSpacing":154,"curve":"linear"}}}%%
+%%{init: {"theme":"base","themeVariables":{"darkMode":true,"background":"#1b1b1f","primaryColor":"#0d111a","primaryTextColor":"#e6edf3","primaryBorderColor":"#d779ed","secondaryColor":"#0d111a","secondaryTextColor":"#e6edf3","tertiaryColor":"#0d111a","tertiaryTextColor":"#e6edf3","textColor":"#e6edf3","classText":"#e6edf3","lineColor":"#b8bfcc","edgeLabelBackground":"#1b1b1f","noteBkgColor":"#fff7be","noteBorderColor":"#f3c600","noteTextColor":"#26210a"},"themeCSS":"background-color: #1b1b1f; .noteText, .noteText tspan, .node[id^=\"note\"] .nodeLabel, .node[id^=\"note\"] .nodeLabel p { color: #26210a !important; fill: #26210a !important; }","layout":"dagre","class":{"nodeSpacing":60,"rankSpacing":218,"diagramPadding":24,"hideEmptyMembersBox":true},"flowchart":{"nodeSpacing":60,"rankSpacing":218,"curve":"linear"}}}%%
 classDiagram
     direction LR
 
@@ -670,6 +765,8 @@ classDiagram
     class RuntimeException
 
     class DatosInvalidosException
+
+    class JugadorDuplicadoException
 
     class EstadoPartidaInvalidoException
 
@@ -688,6 +785,7 @@ classDiagram
     Exception --|> Throwable
     RuntimeException --|> Exception
     DatosInvalidosException --|> Exception
+    JugadorDuplicadoException --|> Exception
     EstadoPartidaInvalidoException --|> Exception
     ParticipanteNotFoundException --|> Exception
     PartidaLlenaException --|> Exception
@@ -700,6 +798,7 @@ classDiagram
     style Exception fill:#0d111a,stroke:#b8bfcc,stroke-width:2px,color:#e6edf3
     style RuntimeException fill:#0d111a,stroke:#b8bfcc,stroke-width:2px,color:#e6edf3
     style DatosInvalidosException fill:#0d111a,stroke:#ff7b86,stroke-width:2px,color:#e6edf3
+    style JugadorDuplicadoException fill:#0d111a,stroke:#ff7b86,stroke-width:2px,color:#e6edf3
     style EstadoPartidaInvalidoException fill:#0d111a,stroke:#ff7b86,stroke-width:2px,color:#e6edf3
     style ParticipanteNotFoundException fill:#0d111a,stroke:#ff7b86,stroke-width:2px,color:#e6edf3
     style PartidaLlenaException fill:#0d111a,stroke:#ff7b86,stroke-width:2px,color:#e6edf3
@@ -723,22 +822,36 @@ El adaptador `MyExceptionMapper` convierte las excepciones en respuestas JSON:
 | `JugadorNotFoundException`, `ParticipanteNotFoundException`, `PartidaNotFoundException` | 404 |
 | `EstadoPartidaInvalidoException`, `PartidaLlenaException` | 409 |
 | `NivelBloqueadoException`, `SaldoInsuficienteException` | 403 |
+| `JugadorDuplicadoException` (sin tratamiento específico todavía) | 500 |
 | Cualquier otra excepción | 500 |
 
-## Diferencias respecto al diseño previsto en el README
+## Estado actual e integraciones pendientes
 
-- `Jugador` es provisional: tiene `saldo` e `inventario`, pero todavía no incluye
-  `vida`, `experiencia` ni un atributo llamado `creditos`. La distinción entre
-  humano y bot está en `Participante`.
-- Aún no existen `JugadorManager` ni `JugadorManagerImpl`. `JugadorDTO` ya incluye
-  experiencia y créditos, pero no hay una conversión implementada con `Jugador`.
+- `Jugador` ya incorpora vida, experiencia, nivel, créditos, inventario y la marca
+  de bot. La vida base 100 y la curva de 100 puntos de experiencia por nivel siguen
+  siendo provisionales. `Participante.vivo` conserva el estado durante una partida.
+- `JugadorManager` y `JugadorManagerImpl` ya gestionan perfiles y progresión.
+  `JugadorService` continúa usando datos simulados y no hay una conversión
+  implementada entre `Jugador` y `JugadorDTO`.
+- La tienda aún no coordina las compras con el nuevo gestor: modificar una copia
+  devuelta por una consulta no actualiza el perfil almacenado. Falta integrar el
+  descuento de créditos y el alta en inventario como una única compra.
+- El catálogo contiene objetos de nivel requerido 0, mientras que
+  `JugadorManager.cumpleNivelRequerido` exige un requisito mínimo de 1. Falta
+  acordar ese contrato antes de conectar los módulos.
 - La tienda permite comprar objetos y el inventario permite consumir granadas;
   todavía no hay operaciones ni atributos para equipar armas o complementos.
+- `PartidaManager` todavía no consulta `existeJugadorHumano` al crear una partida.
+  Los bots generados por partida no se registran en `JugadorManager`; queda
+  pendiente decidir qué participantes tienen perfil y reciben recompensas.
 - `ResultadosManagerImpl` implementa `PartidaListener`, pero ningún código de
   producción lo registra con `PartidaManager.addListener`. Los avisos de bajas y
   finalización necesitan ese registro para llegar al módulo de resultados.
-- Las recompensas se calculan en `ResultadoJugador`; su aplicación al saldo y
-  la experiencia del jugador permanece comentada en el gestor de resultados.
+- Las recompensas se calculan en `ResultadoJugador`; la llamada al gestor de
+  jugadores sigue comentada en `ResultadosManagerImpl`. La integración debe usar
+  `aplicarRecompensaPartida` para evitar pagos duplicados por partida y jugador.
+- `JugadorDuplicadoException` todavía no tiene un caso específico en
+  `MyExceptionMapper`, por lo que actualmente acaba en la respuesta genérica 500.
 - Los servicios de jugadores y tienda son provisionales. `ResultadoJugadorDTO`
   aún no se utiliza y parte de las operaciones de `PartidaManager` no tiene un
   recurso REST asociado.
