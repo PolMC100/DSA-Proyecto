@@ -14,6 +14,9 @@ public class MyExceptionMapper implements ExceptionMapper<Throwable> {
         private int code;
         private String message;
 
+        public ErrorEntity() {
+        }
+
         public ErrorEntity(int code, String message) {
             this.code = code;
             this.message = message;
@@ -22,9 +25,17 @@ public class MyExceptionMapper implements ExceptionMapper<Throwable> {
         public int getCode() {
             return code;
         }
+
+        public void setCode(int code) {
+            this.code = code;
+        }
         public String getMessage() {
             return message;
         }
+        public void setMessage(String message) {
+            this.message = message;
+        }
+
     }
 
     // Se plantean inicialmente los errores mas comunes:
@@ -35,7 +46,9 @@ public class MyExceptionMapper implements ExceptionMapper<Throwable> {
     // 500 si el error no es idenficiado
     @Override
     public Response toResponse(Throwable exception) {
-        if (exception instanceof PartidaNotFoundException || exception instanceof ParticipanteNotFoundException) {
+        if (exception instanceof PartidaNotFoundException ||
+                exception instanceof ParticipanteNotFoundException ||
+                exception instanceof JugadorNotFoundException) {
             return Response.status(Response.Status.NOT_FOUND)
                     .entity(new ErrorEntity(404, exception.getMessage()))
                     .type(MediaType.APPLICATION_JSON).build();
