@@ -4,6 +4,7 @@ import edu.upc.dsa.domain.models.EstadoPartida;
 import edu.upc.dsa.domain.models.Partida;
 import edu.upc.dsa.exceptions.DatosInvalidosException;
 import edu.upc.dsa.exceptions.EstadoPartidaInvalidoException;
+import edu.upc.dsa.exceptions.JugadorNotFoundException;
 import edu.upc.dsa.exceptions.ParticipanteNotFoundException;
 import edu.upc.dsa.exceptions.PartidaLlenaException;
 import edu.upc.dsa.exceptions.PartidaNotFoundException;
@@ -16,9 +17,10 @@ import java.util.List;
  */
 public interface PartidaManager {
 
-    /** Crea una partida PENDIENTE con el jugador humano y numBots bots (máximo 10 en total). */
+    /** Crea una partida PENDIENTE con el jugador humano y numBots bots (máximo 10 en total).
+     *  El humano tiene que existir en el módulo de jugadores y no puede ser un bot. */
     Partida crearPartida(String idJugadorHumano, int numBots)
-            throws DatosInvalidosException, PartidaLlenaException;
+            throws DatosInvalidosException, PartidaLlenaException, JugadorNotFoundException;
 
     Partida getPartida(String idPartida) throws PartidaNotFoundException;
 
@@ -48,6 +50,7 @@ public interface PartidaManager {
     /** Si han pasado los 5 minutos, finaliza la partida. Devuelve true si está finalizada. */
     boolean comprobarTiempo(String idPartida) throws PartidaNotFoundException;
 
+    /** Registra un oyente (Observer). Si ya estaba registrado no se añade otra vez. */
     void addListener(PartidaListener listener);
 
     /** Permite cambiar el reloj (en los tests se usa uno falso). */

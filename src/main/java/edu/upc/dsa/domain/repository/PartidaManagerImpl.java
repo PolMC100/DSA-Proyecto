@@ -5,6 +5,7 @@ import edu.upc.dsa.domain.models.Participante;
 import edu.upc.dsa.domain.models.Partida;
 import edu.upc.dsa.exceptions.DatosInvalidosException;
 import edu.upc.dsa.exceptions.EstadoPartidaInvalidoException;
+import edu.upc.dsa.exceptions.JugadorNotFoundException;
 import edu.upc.dsa.exceptions.ParticipanteNotFoundException;
 import edu.upc.dsa.exceptions.PartidaLlenaException;
 import edu.upc.dsa.exceptions.PartidaNotFoundException;
@@ -43,7 +44,7 @@ public class PartidaManagerImpl implements PartidaManager {
 
     @Override
     public Partida crearPartida(String idJugadorHumano, int numBots)
-            throws DatosInvalidosException, PartidaLlenaException {
+            throws DatosInvalidosException, PartidaLlenaException, JugadorNotFoundException {
         logger.info("crearPartida(" + idJugadorHumano + ", " + numBots + ")");
         if (idJugadorHumano == null || idJugadorHumano.isBlank() || numBots < 0) {
             logger.error("crearPartida: datos inválidos");
@@ -53,6 +54,11 @@ public class PartidaManagerImpl implements PartidaManager {
             logger.error("crearPartida: " + (1 + numBots) + " participantes, máximo " + Partida.MAX_PARTICIPANTES);
             throw new PartidaLlenaException("Máximo " + Partida.MAX_PARTICIPANTES + " participantes (1 humano + "
                     + (Partida.MAX_PARTICIPANTES - 1) + " bots)");
+        }
+        // El humano tiene que estar dado de alta en el módulo de jugadores (Cristian) y no ser un bot
+        if (!JugadorManagerImpl.getInstance().existeJugadorHumano(idJugadorHumano)) {
+            logger.error("crearPartida: el jugador humano " + idJugadorHumano + " no existe");
+            throw new JugadorNotFoundException("No existe el jugador humano " + idJugadorHumano);
         }
         this.contador++;
         Partida p = new Partida("P" + this.contador, idJugadorHumano);
@@ -181,6 +187,11 @@ public class PartidaManagerImpl implements PartidaManager {
     @Override
     public void addListener(PartidaListener listener) {
         logger.info("addListener(" + listener + ")");
+        if (listener == null || this.listeners.contains(listener)) {
+            // Si el mismo oyente se registrara dos veces, contaría cada baja y cada recompensa por duplicado
+            logger.warn("addListener: oyente nulo o ya registrado, se ignora");
+            return;
+        }
         this.listeners.add(listener);
     }
 

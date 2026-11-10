@@ -4,6 +4,7 @@ import edu.upc.dsa.domain.models.EstadoPartida;
 import edu.upc.dsa.domain.models.Partida;
 import edu.upc.dsa.exceptions.DatosInvalidosException;
 import edu.upc.dsa.exceptions.EstadoPartidaInvalidoException;
+import edu.upc.dsa.exceptions.JugadorNotFoundException;
 import edu.upc.dsa.exceptions.ParticipanteNotFoundException;
 import edu.upc.dsa.exceptions.PartidaLlenaException;
 import edu.upc.dsa.exceptions.PartidaNotFoundException;
@@ -22,7 +23,11 @@ public class PartidaManagerTest {
     private final List<String> eventos = new ArrayList<>();
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
+        // El humano de la partida tiene que existir en el módulo de jugadores
+        JugadorManagerImpl.getInstance().limpiar();
+        JugadorManagerImpl.getInstance().registrarJugador("franklin", "Franklin", false);
+        JugadorManagerImpl.getInstance().registrarJugador("robot", "Robot", true);
         pm = PartidaManagerImpl.getInstance();
         ahora = 1_000_000L;
         pm.setReloj(() -> ahora);
@@ -43,6 +48,7 @@ public class PartidaManagerTest {
     @After
     public void tearDown() {
         pm.clear();
+        JugadorManagerImpl.getInstance().limpiar();
     }
 
     private void avanzarSegundos(long s) {
@@ -211,5 +217,61 @@ public class PartidaManagerTest {
         }
         Assert.assertEquals(EstadoPartida.FINALIZADA, p.getEstado());
         Assert.assertEquals(1, eventos.size());   // solo el aviso de fin, ninguna baja
+    }
+
+    // ---------- integración con jugadores y con el Observer ----------
+
+    @Test(expected = JugadorNotFoundException.class)
+    public void crearPartidaConHumanoQueNoExisteFalla() throws Exception {
+        pm.crearPartida("fantasma", 3);
+    }
+
+    @Test(expected = JugadorNotFoundException.class)
+    public void unBotNoPuedeSerElHumanoDeLaPartida() throws Exception {
+        pm.crearPartida("robot", 3);
+    }
+
+    @Test
+    public void elMismoListenerNoSeRegistraDosVeces() throws Exception {
+        List<String> avisos = new ArrayList<>();
+        PartidaListener oyente = new PartidaListener() {
+            @Override
+            public void onBaja(Partida partida, String idAsesino, String idVictima) {
+                avisos.add("baja");
+            }
+
+            @Override
+            public void onPartidaFinalizada(Partida partida) {
+                avisos.add("fin");
+            }
+        };
+        pm.addListener(oyente);
+        pm.addListener(oyente);   // segunda vez: se ignora
+        Partida p = pm.crearPartida("franklin", 1);
+        pm.iniciarPartida(p.getId());
+        pm.registrarBaja(p.getId(), "franklin", "bot-1");
+        pm.finalizarPartida(p.getId());
+        Assert.assertEquals(2, avisos.size());   // una baja y un fin, no el doble
+    }
+
+    @Test
+    public void resultadosRecibeLasBajasYElFinalPorElObserver() throws Exception {
+        ResultadosManagerImpl resultados = ResultadosManagerImpl.getInstance();
+        resultados.limpiar();
+        pm.addListener(resultados);
+        Partida p = pm.crearPartida("franklin", 2);
+        resultados.inicializarMarcador(p);
+        pm.iniciarPartida(p.getId());
+        pm.registrarBaja(p.getId(), "franklin", "bot-1");
+        pm.reaparecer(p.getId(), "bot-1");
+        pm.registrarBaja(p.getId(), "franklin", "bot-1");
+        pm.finalizarPartida(p.getId());
+
+        edu.upc.dsa.domain.models.ResultadoJugador primero =
+                resultados.obtenerMarcadorActual(p.getId()).getClasificacion().get(0);
+        Assert.assertEquals("franklin", primero.getIdJugador());
+        Assert.assertEquals(2, primero.getBajas());
+        Assert.assertTrue(resultados.obtenerMarcadorActual(p.getId()).isProcesado());
+        resultados.limpiar();
     }
 }

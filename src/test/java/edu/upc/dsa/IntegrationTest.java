@@ -3,6 +3,7 @@ package edu.upc.dsa;
 import edu.upc.dsa.domain.dtos.CompraDTO;
 import edu.upc.dsa.domain.dtos.JugadorDTO;
 import edu.upc.dsa.domain.models.Partida;
+import edu.upc.dsa.domain.repository.JugadorManagerImpl;
 import edu.upc.dsa.domain.repository.PartidaManagerImpl;
 import edu.upc.dsa.domain.repository.ResultadosManagerImpl;
 import org.glassfish.grizzly.http.server.HttpServer;
@@ -30,6 +31,9 @@ public class IntegrationTest {
 
         PartidaManagerImpl.getInstance().clear();
         ResultadosManagerImpl.getInstance().limpiar();
+        // La partida necesita que su jugador humano exista en el módulo de jugadores
+        JugadorManagerImpl.getInstance().limpiar();
+        JugadorManagerImpl.getInstance().registrarJugador("J-001", "Tester", false);
 
         server = Main.startServer();
         Client c = ClientBuilder.newClient();

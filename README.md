@@ -145,13 +145,14 @@ interactiva con liberación del puerto.
 
 ### Franklin — partidas
 
-- [ ] Implementar `Partida` y sus estados: pendiente, en curso y finalizada.
-- [ ] Definir la interfaz del gestor de partidas e implementar su versión en memoria.
-- [ ] Implementar la creación e inicio de partidas con un humano y bots, hasta 10 participantes en total.
-- [ ] Implementar el control de los 5 minutos y el cierre de partida según el reparto de responsabilidades con el cliente.
-- [ ] Definir y procesar los eventos de baja y reaparición necesarios para actualizar el estado de la partida.
-- [ ] Notificar la finalización al módulo de resultados y rechazar acciones incompatibles con el estado de la partida.
-- [ ] Probar el límite de participantes, los cambios de estado y el cierre por tiempo sin esperar cinco minutos reales en las pruebas.
+- [x] Implementar `Partida` y sus estados: pendiente, en curso y finalizada.
+- [x] Definir la interfaz del gestor de partidas e implementar su versión en memoria.
+- [x] Implementar la creación e inicio de partidas con un humano y bots, hasta 10 participantes en total.
+- [x] Implementar el control de los 5 minutos y el cierre de partida según el reparto de responsabilidades con el cliente.
+- [x] Definir y procesar los eventos de baja y reaparición necesarios para actualizar el estado de la partida.
+- [x] Notificar la finalización al módulo de resultados y rechazar acciones incompatibles con el estado de la partida.
+- [x] Probar el límite de participantes, los cambios de estado y el cierre por tiempo sin esperar cinco minutos reales en las pruebas.
+- [x] Integrar partidas con jugadores (el humano tiene que existir), resultados (Observer registrado en `Main`) y el servicio REST `/partidas`.
 
 ### Tiffany — resultados, marcador y recompensas
 

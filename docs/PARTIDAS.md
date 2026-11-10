@@ -1,64 +1,100 @@
-# Módulo de Partidas (Franklin): explicado paso a paso
+# Partidas (Franklin)
 
-Este documento es para que entiendas y puedas **defender** tu parte en la presentación del 12/11.
+## Alcance
 
-## 1. Qué hace el módulo
-Gestiona la vida de una partida del shooter:
-- Se **crea** con 1 jugador humano y entre 0 y 9 bots (máximo **10 participantes**).
-- Se **inicia** y empieza a contar el tiempo.
-- Durante la partida llegan **bajas** (alguien mata a alguien) y **reapariciones** (el muerto vuelve; ilimitadas).
-- A los **5 minutos** se cierra sola, o antes si el cliente (Unity) avisa con "finalizar".
-- Al cerrarse **avisa al módulo de resultados** (Tiffany) para que reparta créditos y experiencia.
+Este módulo gestiona el ciclo de vida de una partida: creación con un jugador
+humano y bots, inicio, bajas, reapariciones y cierre a los 5 minutos o cuando el
+cliente lo indica. Contiene Partida, Participante, EstadoPartida,
+PartidaManager/PartidaManagerImpl, PartidaListener, Reloj, las excepciones de
+partidas, PartidaService con sus DTOs y las pruebas del módulo.
 
-## 2. Clases (diagrama de clases)
-| Clase | Qué es | Atributos |
-|---|---|---|
-| `Partida` | Una partida concreta | `id`, `idJugadorHumano`, `participantes` (lista), `estado`, `inicioMillis`, `finMillis`. Constantes `MAX_PARTICIPANTES = 10`, `DURACION_SEGUNDOS = 300` |
-| `Participante` | Un jugador **dentro** de una partida | `idJugador`, `bot` (sí/no), `vivo` (sí/no) |
-| `EstadoPartida` (enum) | Estados posibles | `PENDIENTE`, `EN_CURSO`, `FINALIZADA` |
-| `PartidaManager` (interfaz) | Qué operaciones ofrece el módulo | crear, consultar, iniciar, baja, reaparecer, finalizar, tiempo restante |
-| `PartidaManagerImpl` | La implementación en memoria, **Singleton** | `HashMap<String, Partida>`, lista de listeners, reloj |
-| `PartidaListener` (interfaz) | Patrón **Observer** para avisar a otros módulos | `onBaja(...)`, `onPartidaFinalizada(...)` |
+## Reglas
+
+- Una partida tiene 1 jugador humano y entre 0 y 9 bots: como máximo 10 participantes.
+- El humano tiene que existir en el módulo de jugadores y no puede ser un bot.
+- La partida dura 5 minutos (`DURACION_SEGUNDOS = 300`) desde que se inicia.
+- Las reapariciones son ilimitadas mientras la partida está en curso.
+- Al finalizar se avisa una sola vez al módulo de resultados.
+
+## Modelo
+
+| Clase | Función | Atributos principales |
+| --- | --- | --- |
+| Partida | Una partida concreta. | id, idJugadorHumano, participantes, estado, inicioMillis, finMillis. Constantes MAX_PARTICIPANTES = 10 y DURACION_SEGUNDOS = 300. |
+| Participante | Un jugador dentro de una partida. | idJugador, bot, vivo. |
+| EstadoPartida | Enumerado de estados. | PENDIENTE, EN_CURSO, FINALIZADA. |
+| PartidaManager | Contrato del gestor. | Crear, consultar, iniciar, registrar bajas y reapariciones, finalizar, tiempo restante y oyentes. |
+| PartidaManagerImpl | Implementación en memoria, Singleton. | HashMap por id de partida, lista de PartidaListener, Reloj y contador de ids (P1, P2...). |
+| PartidaListener | Interfaz del patrón Observer. | onBaja(partida, asesino, víctima) y onPartidaFinalizada(partida). |
+| Reloj | Fuente de la hora actual. | ahoraMillis(). Hora del sistema en ejecución; reloj controlado en las pruebas. |
 
 Relaciones:
-- `Partida` **1 → 1..10** `Participante` (composición: los participantes solo existen dentro de su partida).
-- `Participante` → `Jugador` (de Cristian) por `idJugador`. Guardamos el id y no el objeto entero para no crear referencias circulares en el JSON (lo pide la tarea de Azahara).
-- `Partida` **1 → 1** `Scoreboard` (de Tiffany). Lo crea y rellena el módulo de resultados cuando recibe los avisos.
 
-**¿Por qué `Participante` y no usar `Jugador` directamente?** Porque "estar vivo en esta partida" no es algo del jugador, es algo del jugador **en esa partida**. Así el módulo de Cristian no tiene que saber nada de partidas.
+- Partida 1 → 1..10 Participante, por composición: un participante solo existe dentro de su partida.
+- Participante → Jugador por idJugador. Se guarda el identificador, no el objeto, para evitar referencias circulares en el JSON.
+- Partida 1 → 1 Scoreboard. Lo crea y actualiza el módulo de resultados.
 
-## 3. Estados
-```
+Participante es una clase propia porque estar vivo o muerto depende de la
+partida, no del jugador. Así Jugador no necesita conocer las partidas.
+
+## Estados
+
+```text
 PENDIENTE --iniciar--> EN_CURSO --finalizar / 5 minutos--> FINALIZADA
 ```
+
 - Solo se puede iniciar una partida PENDIENTE.
-- Bajas, reapariciones y finalizar solo en EN_CURSO.
-- No se vuelve atrás. Si algo no encaja con el estado, error **409 Conflict**.
+- Las bajas, las reapariciones y la finalización solo se aceptan EN_CURSO.
+- Los estados no retroceden. Una acción incompatible con el estado lanza
+  EstadoPartidaInvalidoException (409).
 
-## 4. Reglas que controla
-- Más de 10 participantes → `PartidaLlenaException` (409).
-- Humano vacío o bots negativos → `DatosInvalidosException` (400).
-- Matar a alguien que ya está muerto → 409. Reaparecer estando vivo → 409.
-- Jugador que no está en la partida → `ParticipanteNotFoundException` (404).
-- Partida inexistente → `PartidaNotFoundException` (404).
-- Cada vez que se toca una partida en curso se mira el reloj: si han pasado 5 minutos, se finaliza sola. Finalizar avisa **una sola vez** a los listeners, así no se duplican recompensas.
+## Funcionamiento del gestor
 
-## 5. API REST de partidas (contrato para Azahara)
-Base: `/dsaApp/partidas`. Todo en JSON.
+| Operación | Comportamiento |
+| --- | --- |
+| crearPartida(humano, numBots) | Valida los datos (400), el máximo de 10 participantes (409) y que el humano exista y no sea un bot (404). Crea la partida PENDIENTE con el humano y los bots bot-1 ... bot-N. |
+| iniciarPartida(id) | Exige PENDIENTE, pasa a EN_CURSO y guarda la hora de inicio. |
+| registrarBaja(id, asesino, víctima) | Exige EN_CURSO y que ambos participen. Rechaza una víctima ya muerta (409). Marca la víctima como muerta y avisa a los oyentes con onBaja. |
+| reaparecer(id, jugador) | Exige EN_CURSO y que el jugador esté muerto (409 si está vivo). Lo vuelve a marcar como vivo. |
+| finalizarPartida(id) | Exige EN_CURSO, pasa a FINALIZADA y avisa a los oyentes con onPartidaFinalizada. |
+| getSegundosRestantes(id) | 300 si está PENDIENTE, 0 si está FINALIZADA y el tiempo que queda si está EN_CURSO. |
+| addListener(oyente) | Registra un oyente. Si ya estaba registrado, lo ignora para no duplicar avisos. |
+
+El cierre por tiempo no usa temporizadores. Cada operación sobre una partida en
+curso comprueba el reloj y, si han pasado 5 minutos, la finaliza en ese momento
+con `finMillis = inicio + 300 s`. El servidor es la autoridad: pasado ese tiempo
+no acepta más bajas aunque el cliente no haya avisado.
+
+Como solo se puede finalizar una partida EN_CURSO, el aviso de fin se emite una
+única vez y las recompensas no se reparten dos veces.
+
+## Integración con otros módulos
+
+| Módulo | Integración |
+| --- | --- |
+| Jugadores | crearPartida consulta `JugadorManagerImpl.existeJugadorHumano(...)`. |
+| Resultados | ResultadosManagerImpl implementa PartidaListener. `Main.startServer` lo registra con `addListener`. Cada baja actualiza el marcador y el fin de la partida reparte experiencia y créditos. |
+| API REST | PartidaService delega en el gestor. MyExceptionMapper traduce las excepciones a 400, 404 y 409. |
+
+## API REST
+
+Base: `/dsaApp/partidas`. Todas las respuestas son JSON.
 
 | Método | Ruta | Cuerpo | Respuesta OK | Errores |
 |---|---|---|---|---|
-| POST | `/partidas` | `{"idJugadorHumano":"franklin","numBots":5}` | **201** + Partida | 400 datos inválidos, 404 jugador no existe, 409 más de 10 |
+| POST | `/partidas` | `{"idJugadorHumano":"franklin","numBots":5}` | **201** + Partida | 400 datos inválidos, 404 el humano no existe o es bot, 409 más de 10 |
+| POST | `/partidas/crear/{jugadorId}` | | **201** + Partida con 9 bots | 400, 404 |
 | GET | `/partidas` | | **200** lista de partidas | |
 | GET | `/partidas?estado=EN_CURSO` | | **200** lista filtrada | 400 estado no válido |
 | GET | `/partidas/{id}` | | **200** Partida | 404 |
-| PUT | `/partidas/{id}/iniciar` | | **200** Partida (EN_CURSO) | 404, 409 si no está PENDIENTE |
-| POST | `/partidas/{id}/bajas` | `{"idAsesino":"franklin","idVictima":"bot-2"}` | **201** | 404 partida o jugador, 409 no está en curso o víctima ya muerta |
-| POST | `/partidas/{id}/reapariciones` | `{"idJugador":"bot-2"}` | **200** | 404, 409 no está en curso o el jugador está vivo |
-| PUT | `/partidas/{id}/finalizar` | | **200** Partida (FINALIZADA) | 404, 409 si no está EN_CURSO |
-| GET | `/partidas/{id}/tiempo` | | **200** `{"segundosRestantes":240}` | 404 |
+| POST | `/partidas/{id}/iniciar` | | **200** Partida (EN_CURSO) | 404, 409 si no está PENDIENTE |
+| POST | `/partidas/{id}/bajas` | `{"idAsesino":"franklin","idVictima":"bot-2"}` | **201** | 400 faltan datos o se elimina a sí mismo, 404 partida o jugador, 409 no está en curso o víctima ya muerta |
+| POST | `/partidas/{id}/reapariciones` | `{"idJugador":"bot-2"}` | **200** | 400, 404, 409 no está en curso o el jugador está vivo |
+| POST | `/partidas/{id}/finalizar` | | **200** Partida (FINALIZADA) | 404, 409 si no está EN_CURSO |
+| GET | `/partidas/{id}/tiempo` | | **200** `{"idPartida":"P1","segundosRestantes":240}` | 404 |
 
 Ejemplo de respuesta de `POST /partidas` (201):
+
 ```json
 {
   "id": "P1",
@@ -74,18 +110,24 @@ Ejemplo de respuesta de `POST /partidas` (201):
 }
 ```
 
-## 6. Decisiones de diseño (preguntas que te pueden hacer)
-- **¿Por qué Singleton?** Porque todos los servicios REST tienen que ver las mismas partidas. Si cada uno hiciera `new`, cada uno tendría su propio `HashMap` vacío.
-- **¿Por qué HashMap?** Buscar una partida por id es O(1).
-- **¿Por qué Observer (`PartidaListener`)?** Para que Partidas no dependa del código de Tiffany: ella se registra como "oyente" y recibe los avisos de baja y de fin. Es uno de los patrones de la Unidad 4.
-- **¿Cómo probáis los 5 minutos sin esperar?** El manager usa una interfaz `Reloj`. En el programa es la hora del sistema; en los tests es un reloj falso que adelantamos 300 segundos de golpe.
-- **¿Quién decide que acaba la partida?** El servidor es la autoridad: aunque el cliente no avise, a los 5 minutos se cierra y no acepta más bajas.
+## Decisiones de diseño
 
-## 7. Tests (JUnit 4): 18 pruebas, todas en verde
-Creación con humano y bots, máximo 10, más de 10 falla, datos inválidos, partida inexistente, ciclo de estados completo, no iniciar dos veces, no finalizar una pendiente, finalizar dos veces no avisa dos veces, baja y reaparición (repetidas), no bajas en pendiente, no matar a un muerto, un vivo no reaparece, jugador que no participa, tiempo restante, a los 299 s sigue en curso, a los 300 s se cierra sola, baja después de 5 minutos rechazada.
+- **Singleton:** todos los servicios REST comparten las mismas partidas en memoria.
+- **HashMap por id:** la búsqueda de una partida es O(1) y es la operación más frecuente.
+- **Observer (PartidaListener):** el módulo de partidas avisa de bajas y finales sin depender del código de resultados. Otros módulos pueden registrarse sin modificarlo.
+- **Reloj inyectable:** permite probar el cierre a los 5 minutos sin esperar.
+- **DTOs:** el cliente solo envía los datos necesarios y no puede fijar el estado, las horas ni los participantes.
 
-## 8. Pendiente de acordar con el equipo
-- **Cristian**: comprobar que el jugador humano existe al crear la partida (cuando exista su `JugadorManager`).
-- **Tiffany**: su gestor de resultados implementa `PartidaListener` y se registra con `PartidaManagerImpl.getInstance().addListener(...)`.
-- **Azahara**: el servicio REST `PartidaService` con las rutas de arriba y mapear las excepciones a 400/404/409.
-- **Pol**: he añadido al `pom.xml` solo Log4j2 y JUnit 4, y un `log4j2.properties` básico. Él puede ampliarlos.
+## Pruebas
+
+- `PartidaManagerTest` (22): creación y límite de 10 participantes, datos inválidos,
+  partida inexistente, ciclo de estados, inicio y finalización repetidos, aviso de
+  fin único, bajas y reapariciones, víctima ya muerta, reaparición estando vivo,
+  jugador que no participa, tiempo restante, cierre exacto a los 300 s, baja
+  después del cierre, humano inexistente, bot como humano, oyente repetido y
+  actualización del marcador de resultados por el Observer.
+- `PartidaServiceTest` (4, HTTP): flujo completo con marcador actualizado, listado
+  y filtro por estado, errores de creación y errores de estado y participantes.
+
+El tiempo se controla con un reloj falso (`pm.setReloj(() -> ahora)`): avanzar la
+variable `ahora` 300 segundos equivale a esperar los 5 minutos.
