@@ -1,6 +1,8 @@
 package edu.upc.dsa.exceptions;
 
-/** No existe un perfil con ese identificador. */
-public class JugadorNotFoundException extends Exception {
-    public JugadorNotFoundException(String message) { super(message); }
+public class JugadorNotFoundException extends RuntimeException {
+    public JugadorNotFoundException(String message) {
+
+        super(message);
+    }
 }
