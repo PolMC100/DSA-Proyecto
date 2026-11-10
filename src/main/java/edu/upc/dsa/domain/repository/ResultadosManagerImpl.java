@@ -84,12 +84,11 @@ public class ResultadosManagerImpl implements ResultadosManager, PartidaListener
             res.setCreditosGanados(creditos);
 
             try {
-                //Descomentar cuando este creado Jugadores
-//                JugadorManagerImpl.getInstance().sumarExperienciaYCreditos(
-//                        res.getIdJugador(),
-//                        res.getPuntuacion(),
-//                        creditos
-//                );
+                JugadorManagerImpl.getInstance().sumarExperienciaYCreditos(
+                        res.getIdJugador(),
+                       res.getPuntuacion(),
+                        creditos
+                );
             } catch (Exception e) {
                 System.err.println("No se han podido aplicar las recompensas al participante: " + res.getIdJugador());
             }
