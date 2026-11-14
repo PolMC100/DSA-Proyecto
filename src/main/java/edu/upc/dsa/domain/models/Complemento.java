@@ -1,8 +1,6 @@
 package edu.upc.dsa.domain.models;
 
-import io.swagger.models.auth.In;
-
-public class Complemento {
+public class Complemento implements Inventario.Comprable {
     private String nombre;
     private String tipo;
     private String efecto;
@@ -10,6 +8,11 @@ public class Complemento {
     private Integer nivelRequerido;
 
     public Complemento() {}
+
+    public Complemento(Complemento complemento) {
+        this(complemento.nombre, complemento.tipo, complemento.efecto,
+                complemento.precio, complemento.nivelRequerido);
+    }
 
     public Complemento(String nombre, String tipo, String efecto, Integer precio, Integer nivelRequerido) {
         this.nombre = nombre;
@@ -32,5 +35,13 @@ public class Complemento {
     public void setPrecio(Integer precio) { this.precio = precio; }
 
     public Integer getNivelRequerido() { return nivelRequerido; }
-    public void setNivelRequerido(Integer precio) { this.nivelRequerido = nivelRequerido; }
+    public void setNivelRequerido(Integer nivelRequerido) { this.nivelRequerido = nivelRequerido; }
+
+    @Override
+    public boolean equals(Object objeto) {
+        return objeto instanceof Complemento complemento && java.util.Objects.equals(nombre, complemento.nombre);
+    }
+
+    @Override
+    public int hashCode() { return java.util.Objects.hashCode(nombre); }
 }

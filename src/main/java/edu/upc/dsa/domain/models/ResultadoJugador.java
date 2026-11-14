@@ -12,6 +12,14 @@ public class ResultadoJugador {
         //constructor vacío
     }
 
+    public ResultadoJugador(ResultadoJugador resultado) {
+        this(resultado.idJugador, resultado.idPartida);
+        this.bajas = resultado.bajas;
+        this.muertes = resultado.muertes;
+        this.puntuacion = resultado.puntuacion;
+        this.creditosGanados = resultado.creditosGanados;
+    }
+
     public ResultadoJugador(String idJugador, String idPartida) {
         this.idJugador = idJugador;
         this.idPartida = idPartida;

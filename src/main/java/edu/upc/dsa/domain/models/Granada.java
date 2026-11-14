@@ -1,8 +1,6 @@
 package edu.upc.dsa.domain.models;
 
-import io.swagger.models.auth.In;
-
-public class Granada {
+public class Granada implements Inventario.Comprable {
     private String nombre;
     private Integer daño;
     private Double radio;
@@ -12,6 +10,11 @@ public class Granada {
     private Integer nivelRequerido;
 
     public Granada() {}
+
+    public Granada(Granada granada) {
+        this(granada.nombre, granada.daño, granada.radio, granada.efecto,
+                granada.duracionEfecto, granada.precio, granada.nivelRequerido);
+    }
 
     public Granada(String nombre, Integer daño, Double radio, String efecto, Integer duracionEfecto, Integer precio, Integer nivelRequerido) {
         this.nombre = nombre;
@@ -42,5 +45,5 @@ public class Granada {
     public void setPrecio(Integer precio) { this.precio = precio; }
 
     public Integer getNivelRequerido() { return nivelRequerido; }
-    public void setNivelRequerido(Integer precio) { this.nivelRequerido = nivelRequerido; }
+    public void setNivelRequerido(Integer nivelRequerido) { this.nivelRequerido = nivelRequerido; }
 }

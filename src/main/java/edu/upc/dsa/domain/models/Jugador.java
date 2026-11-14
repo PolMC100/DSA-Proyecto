@@ -1,11 +1,12 @@
 package edu.upc.dsa.domain.models;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import javax.xml.bind.annotation.XmlTransient;
 
 public class Jugador {
     private String idJugador;
     private String nombre;
+    private String usuario;
+    private String password;
     private boolean bot;
     // Vida base del perfil; vivo/muerto durante una partida pertenece a Participante.
     private int vida;
@@ -28,7 +29,7 @@ public class Jugador {
         this.bot = bot;
     }
 
-    /** Constructor usado por la tienda; conserva el nivel indicado, incluido 0. */
+    /** Constructor de compatibilidad; conserva el nivel indicado, incluido 0. */
     public Jugador(String id, String nombre, double saldo, int nivel) {
         this(id, nombre, false);
         setSaldo(saldo);
@@ -39,17 +40,14 @@ public class Jugador {
     public Jugador(Jugador jugador) {
         this.idJugador = jugador.idJugador;
         this.nombre = jugador.nombre;
+        this.usuario = jugador.usuario;
+        this.password = jugador.password;
         this.bot = jugador.bot;
         this.vida = jugador.vida;
         this.experiencia = jugador.experiencia;
         this.nivel = jugador.nivel;
         this.creditos = jugador.creditos;
-        // Copiar las colecciones, manteniendo la identidad de los objetos del catálogo.
-        // Gur usa contains(arma/complemento) y Granada como clave sin equals/hashCode.
-        this.inventario = jugador.inventario == null ? null : new Inventario(
-                new ArrayList<>(jugador.inventario.getArmas()),
-                new HashMap<>(jugador.inventario.getGranadas()),
-                new ArrayList<>(jugador.inventario.getComplementos()));
+        this.inventario = jugador.inventario == null ? null : new Inventario(jugador.inventario);
     }
 
     public String getIdJugador() { return idJugador; }
@@ -59,6 +57,13 @@ public class Jugador {
     public void setId(String id) { this.idJugador = id; }
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) { this.nombre = nombre; }
+    public String getUsuario() { return usuario; }
+    public void setUsuario(String usuario) { this.usuario = usuario; }
+
+    @XmlTransient
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
+
     public boolean isBot() { return bot; }
     public void setBot(boolean bot) { this.bot = bot; }
     public int getVida() { return vida; }
@@ -73,7 +78,7 @@ public class Jugador {
     /** Alias monetario de la tienda. Los créditos del proyecto son enteros. */
     public double getSaldo() { return creditos; }
 
-    /** Mantiene la firma de Gur sin truncar ni redondear un saldo fraccionario. */
+    /** Alias de compatibilidad: rechaza saldos fraccionarios sin truncar ni redondear. */
     public void setSaldo(double saldo) {
         if (!Double.isFinite(saldo) || saldo < Integer.MIN_VALUE || saldo > Integer.MAX_VALUE
                 || saldo != Math.rint(saldo)) {
@@ -82,7 +87,7 @@ public class Jugador {
         this.creditos = (int) saldo;
     }
 
-    /** Inventario mutable de este perfil, como requiere la tienda de Gur. */
+    /** Inventario de este perfil; las consultas del gestor devuelven una copia completa. */
     public Inventario getInventario() { return inventario; }
     public void setInventario(Inventario inventario) { this.inventario = inventario; }
 

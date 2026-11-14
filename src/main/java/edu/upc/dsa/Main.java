@@ -1,7 +1,5 @@
 package edu.upc.dsa;
 
-import edu.upc.dsa.domain.repository.PartidaManagerImpl;
-import edu.upc.dsa.domain.repository.ResultadosManagerImpl;
 import io.swagger.jaxrs.config.BeanConfig;
 import io.swagger.jaxrs.config.SwaggerContextService;
 import org.apache.logging.log4j.LogManager;
@@ -28,11 +26,8 @@ public final class Main {
     }
 
     public static HttpServer startServer(URI uri) throws IOException {
-        // Observer: el módulo de resultados escucha las bajas y el final de cada partida.
-        // addListener ignora repeticiones, así reiniciar el servidor no duplica los avisos.
-        PartidaManagerImpl.getInstance().addListener(ResultadosManagerImpl.getInstance());
-
-        ResourceConfig config = new ResourceConfig().packages("edu.upc.dsa")
+        ResourceConfig config = new ResourceConfig().packages("edu.upc.dsa.services")
+                .register(MyExceptionMapper.class)
                 .register(MoxyJsonFeature.class)
                 .register(io.swagger.jaxrs.listing.ApiListingResource.class)
                 .register(io.swagger.jaxrs.listing.SwaggerSerializers.class)

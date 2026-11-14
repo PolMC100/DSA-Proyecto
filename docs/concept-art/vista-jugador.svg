@@ -1,0 +1,311 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="Arial Black, Arial, sans-serif">
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9cfb8"/>
+      <stop offset="1" stop-color="#bfb398"/>
+    </linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a9875d"/>
+      <stop offset="1" stop-color="#6e5232"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#4a4f57"/>
+      <stop offset="0.35" stop-color="#c9ced6"/>
+      <stop offset="0.6" stop-color="#8a9099"/>
+      <stop offset="1" stop-color="#3a3e45"/>
+    </linearGradient>
+    <linearGradient id="metalFar" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5a5f67"/>
+      <stop offset="0.4" stop-color="#b4b9c1"/>
+      <stop offset="1" stop-color="#4a4e55"/>
+    </linearGradient>
+    <linearGradient id="penBody" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e8f1ff" stop-opacity="0.95"/>
+      <stop offset="0.5" stop-color="#b9cdea" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#7f97bd" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="light" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff8dc" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#fff8dc" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="vignette" cx="0.5" cy="0.5" r="0.75">
+      <stop offset="0.6" stop-color="#000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0.55"/>
+    </radialGradient>
+    <filter id="blurFar"><feGaussianBlur stdDeviation="1.2"/></filter>
+    <filter id="shadow"><feGaussianBlur stdDeviation="6"/></filter>
+  </defs>
+
+  <!-- ===== PARED DEL FONDO ===== -->
+  <rect x="0" y="0" width="1280" height="300" fill="url(#wall)"/>
+  <!-- pizarra -->
+  <g filter="url(#blurFar)">
+    <rect x="330" y="30" width="620" height="190" fill="#7a5a36"/>
+    <rect x="340" y="38" width="600" height="172" fill="#2f5240"/>
+    <text x="400" y="100" font-family="Comic Sans MS, cursive" font-size="30" fill="#e8efe6" opacity="0.8">2x + 3 = 11</text>
+    <text x="400" y="145" font-family="Comic Sans MS, cursive" font-size="24" fill="#e8efe6" opacity="0.7">x = 4</text>
+    <text x="700" y="120" font-family="Comic Sans MS, cursive" font-size="22" fill="#f6e27a" opacity="0.75">¡EXAMEN VIERNES!</text>
+    <rect x="330" y="210" width="620" height="10" fill="#5e4428"/>
+    <rect x="420" y="203" width="30" height="7" fill="#fff"/>
+    <rect x="470" y="204" width="22" height="6" fill="#e86b6b"/>
+  </g>
+  <!-- ventana con luz -->
+  <rect x="1040" y="20" width="200" height="200" fill="#bfe3f7" opacity="0.8"/>
+  <path d="M1140 20 V220 M1040 120 H1240" stroke="#efe8d6" stroke-width="8"/>
+  <polygon points="1040,220 1240,220 1280,420 900,420" fill="url(#light)"/>
+  <!-- zócalo -->
+  <rect x="0" y="282" width="1280" height="18" fill="#6d5a45"/>
+
+  <!-- ===== SUELO ===== -->
+  <rect x="0" y="300" width="1280" height="420" fill="url(#floor)"/>
+  <g stroke="#4f3a22" stroke-width="2" opacity="0.55">
+    <!-- líneas de fuga (tablones) -->
+    <line x1="640" y1="300" x2="-1900" y2="720"/>
+    <line x1="640" y1="300" x2="-1100" y2="720"/>
+    <line x1="640" y1="300" x2="-500" y2="720"/>
+    <line x1="640" y1="300" x2="-50" y2="720"/>
+    <line x1="640" y1="300" x2="330" y2="720"/>
+    <line x1="640" y1="300" x2="640" y2="720"/>
+    <line x1="640" y1="300" x2="950" y2="720"/>
+    <line x1="640" y1="300" x2="1330" y2="720"/>
+    <line x1="640" y1="300" x2="1780" y2="720"/>
+    <line x1="640" y1="300" x2="2380" y2="720"/>
+    <line x1="640" y1="300" x2="3180" y2="720"/>
+    <!-- juntas horizontales -->
+    <line x1="0" y1="308" x2="1280" y2="308"/>
+    <line x1="0" y1="320" x2="1280" y2="320"/>
+    <line x1="0" y1="340" x2="1280" y2="340"/>
+    <line x1="0" y1="372" x2="1280" y2="372"/>
+    <line x1="0" y1="425" x2="1280" y2="425"/>
+    <line x1="0" y1="510" x2="1280" y2="510"/>
+    <line x1="0" y1="650" x2="1280" y2="650"/>
+  </g>
+
+  <!-- ===== MOBILIARIO LEJANO (sillas/mesas pequeñas al fondo) ===== -->
+  <g opacity="0.9">
+    <rect x="520" y="200" width="7" height="105" fill="url(#metalFar)"/>
+    <rect x="600" y="210" width="7" height="95" fill="url(#metalFar)"/>
+    <rect x="505" y="196" width="120" height="10" fill="#8b6b45"/>
+    <rect x="860" y="190" width="9" height="122" fill="url(#metalFar)"/>
+    <rect x="960" y="190" width="9" height="122" fill="url(#metalFar)"/>
+    <rect x="845" y="182" width="140" height="12" fill="#8b6b45"/>
+  </g>
+
+  <!-- ===== MOCHILA AL FONDO DERECHA ===== -->
+  <g>
+    <path d="M1010 330 Q1010 250 1080 245 Q1150 250 1150 330 Z" fill="#c0392b"/>
+    <rect x="1035" y="285" width="90" height="35" rx="8" fill="#a93226"/>
+    <path d="M1040 250 Q1080 215 1120 250" stroke="#7b241c" stroke-width="7" fill="none"/>
+    <ellipse cx="1080" cy="332" rx="78" ry="8" fill="#000" opacity="0.25"/>
+  </g>
+
+  <!-- ===== ENEMIGO (muñeco tipo bloque) con REGLA ===== -->
+  <g transform="translate(735,262)">
+    <ellipse cx="22" cy="78" rx="26" ry="5" fill="#000" opacity="0.3"/>
+    <!-- regla -->
+    <g transform="rotate(-35 44 34)">
+      <rect x="40" y="-30" width="9" height="70" fill="#f2d24b" stroke="#a88a1a" stroke-width="1"/>
+      <path d="M40 -26 h4 M40 -20 h3 M40 -14 h4 M40 -8 h3 M40 -2 h4 M40 4 h3 M40 10 h4 M40 16 h3 M40 22 h4" stroke="#5a4a10" stroke-width="1"/>
+    </g>
+    <!-- piernas -->
+    <rect x="6" y="48" width="14" height="28" fill="#2e7d32"/>
+    <rect x="22" y="48" width="14" height="28" fill="#2e7d32"/>
+    <!-- torso -->
+    <rect x="4" y="20" width="34" height="30" fill="#c62828"/>
+    <!-- brazos -->
+    <rect x="-8" y="20" width="12" height="28" fill="#f4c542"/>
+    <rect x="38" y="20" width="12" height="26" fill="#f4c542" transform="rotate(-25 44 22)"/>
+    <!-- cabeza -->
+    <rect x="9" y="-4" width="24" height="24" rx="5" fill="#f4c542"/>
+    <circle cx="17" cy="6" r="2" fill="#111"/>
+    <circle cx="26" cy="6" r="2" fill="#111"/>
+    <path d="M16 13 Q21 17 27 13" stroke="#111" stroke-width="1.6" fill="none"/>
+    <!-- etiqueta -->
+    <rect x="-12" y="-26" width="66" height="15" rx="3" fill="#000" opacity="0.55"/>
+    <text x="21" y="-15" font-size="10" fill="#ff5252" text-anchor="middle">xX_Goma_Xx</text>
+    <rect x="-2" y="-9" width="46" height="4" fill="#333"/>
+    <rect x="-2" y="-9" width="30" height="4" fill="#ff5252"/>
+  </g>
+
+  <!-- ===== LÁPIZ TIRADO EN EL SUELO ===== -->
+  <g transform="rotate(-8 640 400)">
+    <ellipse cx="560" cy="418" rx="230" ry="9" fill="#000" opacity="0.25" filter="url(#shadow)"/>
+    <polygon points="340,390 740,390 740,412 340,412" fill="#f6c21c"/>
+    <polygon points="340,390 740,390 740,397 340,397" fill="#ffd94d"/>
+    <rect x="740" y="388" width="34" height="26" fill="#c9ced6"/>
+    <path d="M748 388 v26 M758 388 v26 M766 388 v26" stroke="#8a9099" stroke-width="2"/>
+    <rect x="774" y="388" width="28" height="26" rx="6" fill="#ef7c9a"/>
+    <polygon points="340,390 340,412 280,401" fill="#f1d2a6"/>
+    <polygon points="296,396 296,406 280,401" fill="#333"/>
+    <text x="560" y="407" font-family="Arial" font-size="12" fill="#7a5c00" text-anchor="middle">HB</text>
+  </g>
+
+  <!-- ===== BOLA DE PAPEL ===== -->
+  <g>
+    <ellipse cx="930" cy="462" rx="55" ry="10" fill="#000" opacity="0.25"/>
+    <path d="M880 440 Q872 395 910 385 Q935 365 965 392 Q995 410 978 445 Q960 470 920 465 Q890 462 880 440 Z" fill="#f4f4ef" stroke="#bdbdb3" stroke-width="2"/>
+    <path d="M895 420 L925 405 L950 425 M910 445 L940 430 L965 445 M915 395 L930 418" stroke="#c8c8bc" stroke-width="2" fill="none"/>
+    <path d="M885 430 h40 M890 448 h50" stroke="#8fb5e8" stroke-width="1.5" opacity="0.7"/>
+  </g>
+
+  <!-- ===== GOMA DE BORRAR GIGANTE (cobertura) ===== -->
+  <g>
+    <ellipse cx="300" cy="570" rx="230" ry="20" fill="#000" opacity="0.3" filter="url(#shadow)"/>
+    <!-- cara superior -->
+    <polygon points="110,450 430,430 520,470 200,495" fill="#fbd0dc"/>
+    <!-- cara frontal -->
+    <polygon points="110,450 200,495 200,575 110,530" fill="#e7a9ba"/>
+    <polygon points="200,495 520,470 520,550 200,575" fill="#f3b7c7"/>
+    <!-- funda azul -->
+    <polygon points="330,482 520,470 520,550 330,565" fill="#2f6fd6"/>
+    <polygon points="330,482 520,470 470,447 280,460" fill="#4b8bf0"/>
+    <text x="425" y="527" font-size="24" fill="#fff" text-anchor="middle" transform="rotate(-4 425 520)">BORRA</text>
+    <!-- marcas de uso -->
+    <path d="M150 470 q20 -6 35 4" stroke="#d998a9" stroke-width="3" fill="none"/>
+  </g>
+
+  <!-- ===== PATA DE MESA GIGANTE (izquierda, cerca) ===== -->
+  <g>
+    <polygon points="0,0 360,0 300,70 0,95" fill="#5a3f24"/>
+    <polygon points="0,95 300,70 300,82 0,110" fill="#3e2b18"/>
+    <rect x="30" y="80" width="95" height="560" fill="url(#metal)"/>
+    <ellipse cx="77" cy="642" rx="62" ry="16" fill="#222"/>
+    <ellipse cx="77" cy="636" rx="56" ry="12" fill="#3a3a3a"/>
+    <ellipse cx="90" cy="660" rx="140" ry="18" fill="#000" opacity="0.3" filter="url(#shadow)"/>
+    <!-- chicle pegado -->
+    <path d="M180 92 q20 18 40 4 q-6 18 -24 18 q-14 -2 -16 -22" fill="#ff7fb3"/>
+  </g>
+
+  <!-- ===== PATA DE SILLA (derecha, media distancia) ===== -->
+  <g>
+    <rect x="1170" y="0" width="38" height="372" fill="url(#metal)"/>
+    <ellipse cx="1189" cy="372" rx="26" ry="7" fill="#222"/>
+    <rect x="1050" y="0" width="22" height="330" fill="url(#metalFar)"/>
+    <ellipse cx="1061" cy="330" rx="16" ry="5" fill="#222"/>
+  </g>
+
+  <!-- ===== VIRUTAS DE SACAPUNTAS ===== -->
+  <g>
+    <path d="M610 560 q25 -18 50 0 q-10 14 -25 12 q-15 -2 -25 -12z" fill="#e8b98a" stroke="#c4864b"/>
+    <path d="M612 560 q23 -12 46 0" stroke="#f6c21c" stroke-width="3" fill="none"/>
+    <path d="M680 590 q20 -14 40 0 q-8 10 -20 9 q-12 -1 -20 -9z" fill="#e8b98a" stroke="#c4864b"/>
+    <path d="M682 590 q18 -9 36 0" stroke="#2f6fd6" stroke-width="3" fill="none"/>
+  </g>
+
+  <!-- ===== TRAZADOR DE TINTA (disparo) ===== -->
+  <g opacity="0.85">
+    <circle cx="700" cy="330" r="5" fill="#1f4fbf"/>
+    <circle cx="672" cy="345" r="4" fill="#1f4fbf"/>
+    <circle cx="790" cy="300" r="7" fill="#1f4fbf" opacity="0.6"/>
+    <path d="M780 296 l-10 -8 M796 292 l6 -9 M800 306 l10 4" stroke="#1f4fbf" stroke-width="3"/>
+  </g>
+
+  <!-- ===== ARMA DEL JUGADOR: BOLI ===== -->
+  <g>
+    <!-- brazo -->
+    <polygon points="1280,600 1280,720 1010,720 1060,620" fill="#1565c0"/>
+    <polygon points="1060,620 1280,600 1280,615 1070,632" fill="#1e88e5"/>
+    <!-- cuerpo del boli -->
+    <polygon points="1230,690 1195,610 760,420 748,438" fill="url(#penBody)" stroke="#5b6f92" stroke-width="2"/>
+    <!-- carga de tinta interior -->
+    <polygon points="1205,650 1200,640 790,438 788,444" fill="#1f4fbf" opacity="0.8"/>
+    <!-- punta -->
+    <polygon points="760,420 748,438 720,418" fill="#d8dce3" stroke="#8a9099" stroke-width="1.5"/>
+    <circle cx="721" cy="418" r="3" fill="#1f4fbf"/>
+    <!-- tapón trasero azul -->
+    <polygon points="1240,720 1185,600 1215,588 1280,700" fill="#1f4fbf"/>
+    <!-- clip -->
+    <polygon points="1060,555 1075,545 880,462 870,470" fill="#2b5bd0"/>
+    <!-- mano tipo bloque -->
+    <rect x="975" y="545" width="125" height="105" rx="14" fill="#f4c542" transform="rotate(-24 1037 597)"/>
+    <rect x="955" y="530" width="70" height="38" rx="10" fill="#e8b630" transform="rotate(-24 990 549)"/>
+    <rect x="985" y="600" width="110" height="20" rx="8" fill="#d9a826" transform="rotate(-24 1040 610)" opacity="0.8"/>
+    <!-- pegatina -->
+    <text x="1120" y="602" font-size="14" fill="#1f4fbf" transform="rotate(24 1120 602)">CRISTAL</text>
+  </g>
+
+  <!-- viñeta -->
+  <rect x="0" y="0" width="1280" height="720" fill="url(#vignette)"/>
+
+  <!-- ===================== HUD ===================== -->
+  <!-- mira -->
+  <g stroke="#fff" stroke-width="3" stroke-linecap="round">
+    <line x1="640" y1="345" x2="640" y2="353"/>
+    <line x1="640" y1="367" x2="640" y2="375"/>
+    <line x1="625" y1="360" x2="633" y2="360"/>
+    <line x1="647" y1="360" x2="655" y2="360"/>
+  </g>
+  <circle cx="640" cy="360" r="2" fill="#ff5252"/>
+
+  <!-- vida -->
+  <g>
+    <rect x="24" y="640" width="300" height="56" rx="10" fill="#000" opacity="0.5"/>
+    <text x="40" y="664" font-size="14" fill="#fff">VIDA</text>
+    <rect x="40" y="672" width="220" height="14" rx="4" fill="#333"/>
+    <rect x="40" y="672" width="165" height="14" rx="4" fill="#4caf50"/>
+    <text x="300" y="686" font-size="22" fill="#fff" text-anchor="end">75</text>
+  </g>
+
+  <!-- munición -->
+  <g>
+    <rect x="1050" y="24" width="0" height="0"/>
+    <rect x="1000" y="640" width="256" height="56" rx="10" fill="#000" opacity="0.5"/>
+    <path d="M1026 652 q10 14 10 22 a10 10 0 0 1 -20 0 q0 -8 10 -22z" fill="#4b8bf0"/>
+    <text x="1050" y="684" font-size="30" fill="#fff">24</text>
+    <text x="1098" y="684" font-size="18" fill="#bbb">/ 96</text>
+    <text x="1240" y="664" font-size="11" fill="#9ec1ff" text-anchor="end">TINTA</text>
+    <text x="1240" y="686" font-size="13" fill="#fff" text-anchor="end">BOLI</text>
+  </g>
+
+  <!-- selector de armas -->
+  <g font-size="11" text-anchor="middle">
+    <rect x="430" y="652" width="420" height="50" rx="10" fill="#000" opacity="0.45"/>
+    <rect x="440" y="658" width="92" height="38" rx="6" fill="#4b8bf0" opacity="0.85" stroke="#fff" stroke-width="2"/>
+    <text x="486" y="672" fill="#fff">1</text><text x="486" y="688" fill="#fff">BOLI</text>
+    <rect x="542" y="658" width="92" height="38" rx="6" fill="#222" opacity="0.8"/>
+    <text x="588" y="672" fill="#bbb">2</text><text x="588" y="688" fill="#ddd">REGLA</text>
+    <rect x="644" y="658" width="92" height="38" rx="6" fill="#222" opacity="0.8"/>
+    <text x="690" y="672" fill="#bbb">3</text><text x="690" y="688" fill="#ddd">ROTULADOR</text>
+    <rect x="746" y="658" width="92" height="38" rx="6" fill="#222" opacity="0.8"/>
+    <text x="792" y="672" fill="#bbb">4  x2</text><text x="792" y="688" fill="#ddd">TIPEX</text>
+  </g>
+
+  <!-- marcador -->
+  <g>
+    <rect x="530" y="16" width="220" height="44" rx="10" fill="#000" opacity="0.5"/>
+    <text x="580" y="46" font-size="22" fill="#4b8bf0" text-anchor="middle">7</text>
+    <text x="640" y="35" font-size="11" fill="#fff" text-anchor="middle">RECREO EN</text>
+    <text x="640" y="52" font-size="16" fill="#fff" text-anchor="middle">02:41</text>
+    <text x="700" y="46" font-size="22" fill="#ff5252" text-anchor="middle">5</text>
+  </g>
+
+  <!-- minimapa -->
+  <g>
+    <rect x="1096" y="16" width="168" height="128" rx="8" fill="#000" opacity="0.55"/>
+    <rect x="1106" y="26" width="148" height="108" fill="#c9a77a" opacity="0.6"/>
+    <rect x="1130" y="28" width="100" height="6" fill="#2f5240"/>
+    <g fill="#6b4a2a" opacity="0.9">
+      <rect x="1116" y="48" width="26" height="14"/><rect x="1152" y="48" width="26" height="14"/><rect x="1188" y="48" width="26" height="14"/><rect x="1224" y="48" width="22" height="14"/>
+      <rect x="1116" y="74" width="26" height="14"/><rect x="1152" y="74" width="26" height="14"/><rect x="1188" y="74" width="26" height="14"/><rect x="1224" y="74" width="22" height="14"/>
+      <rect x="1116" y="100" width="26" height="14"/><rect x="1152" y="100" width="26" height="14"/><rect x="1188" y="100" width="26" height="14"/><rect x="1224" y="100" width="22" height="14"/>
+    </g>
+    <polygon points="1165,124 1159,134 1171,134" fill="#4bf0ff"/>
+    <circle cx="1190" cy="70" r="3.5" fill="#ff5252"/>
+    <text x="1180" y="142" font-size="9" fill="#fff" text-anchor="middle" opacity="0">.</text>
+  </g>
+
+  <!-- kill feed -->
+  <g font-size="12">
+    <rect x="1036" y="156" width="228" height="22" rx="4" fill="#000" opacity="0.45"/>
+    <text x="1046" y="171" fill="#9ec1ff">Tú</text>
+    <text x="1072" y="171" fill="#fff">✎ ROTULADOR</text>
+    <text x="1170" y="171" fill="#ff8a80">Sacapuntas99</text>
+    <rect x="1036" y="182" width="228" height="22" rx="4" fill="#000" opacity="0.45"/>
+    <text x="1046" y="197" fill="#ff8a80">xX_Goma_Xx</text>
+    <text x="1130" y="197" fill="#fff">📏 REGLA</text>
+    <text x="1196" y="197" fill="#9ec1ff">Clip_Pro</text>
+  </g>
+
+  <!-- aviso -->
+  <text x="640" y="320" font-size="13" fill="#fff" text-anchor="middle" opacity="0.85" stroke="#000" stroke-width="0.6">[E] Recoger LÁPIZ HB</text>
+</svg>

@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vista Jugador Aula</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,700;0,800;0,900;1,900&display=swap" rel="stylesheet">
+<style>
+  :root { --hud-dark: rgba(30,34,44,.82); --txt: #fff; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #dfe6ee; font-family: Montserrat, Arial, sans-serif; user-select: none; }
+  canvas { display: block; cursor: grab; }
+  canvas:active { cursor: grabbing; }
+  .hud { position: fixed; pointer-events: none; color: var(--txt); }
+  .tl { top: 12px; left: 12px; display: flex; gap: 8px; }
+  .tl span { width: 30px; height: 30px; border-radius: 50%; background: var(--hud-dark); display: grid; place-items: center; }
+  .chat { top: 50px; left: 14px; font-size: 9px; color: rgba(0,0,0,.45); font-weight: 700; }
+  .score { top: 8px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; }
+  .team { display: flex; align-items: center; gap: 10px; padding: 4px 12px 4px 4px; border-radius: 6px; font-weight: 900; font-size: 26px; text-shadow: 0 2px 0 rgba(0,0,0,.35); box-shadow: 0 3px 0 rgba(0,0,0,.25); }
+  .team.a { background: linear-gradient(#ffd84a, #e6a900); }
+  .team.b { background: linear-gradient(#7d5cff, #4a2fc2); padding: 4px 4px 4px 12px; }
+  .team .av { width: 40px; height: 40px; border-radius: 4px; background: #fff; display: grid; place-items: center; }
+  .timer { background: var(--hud-dark); border-radius: 6px; padding: 6px 14px; font-weight: 900; font-size: 22px; }
+  .cross { top: 50%; left: 50%; width: 30px; height: 30px; transform: translate(-50%,-50%); }
+  .cross i { position: absolute; width: 4px; height: 4px; background: #fff; border-radius: 50%; box-shadow: 0 0 2px rgba(0,0,0,.8); }
+  .hp { left: 18px; bottom: 18px; width: 220px; height: 20px; border-radius: 12px; background: #1e222c; border: 3px solid #1e222c; box-shadow: 0 2px 0 rgba(0,0,0,.3); }
+  .hp .fill { height: 100%; width: 100%; border-radius: 9px; background: linear-gradient(#7dff5a, #33c41c); display: flex; justify-content: flex-end; align-items: center; padding-right: 8px; box-sizing: border-box; font-size: 11px; font-weight: 900; color: #1e5a12; }
+  .ammo { right: 22px; bottom: 16px; display: flex; align-items: flex-end; gap: 18px; }
+  .ammo .num { text-align: left; line-height: .9; text-shadow: 0 3px 0 rgba(0,0,0,.45), 0 0 8px rgba(0,0,0,.25); }
+  .ammo .big { font-size: 46px; font-weight: 900; font-style: italic; }
+  .ammo .res { font-size: 15px; font-weight: 800; vertical-align: top; margin-left: 4px; }
+  .ammo .name { font-size: 17px; font-weight: 900; margin-top: 2px; }
+  .slots { display: flex; gap: 6px; }
+  .slot { position: relative; width: 50px; height: 50px; border-radius: 8px; background: rgba(30,34,44,.55); display: grid; place-items: center; }
+  .slot.on { background: rgba(255,255,255,.92); box-shadow: 0 0 0 3px #ffd84a; }
+  .slot b { position: absolute; left: 4px; bottom: 2px; font-size: 10px; color: #fff; text-shadow: 0 1px 1px #000; }
+  .slot.on b { color: #1e222c; text-shadow: none; }
+  .keys { right: 22px; bottom: 2px; font-size: 9px; font-weight: 700; color: rgba(255,255,255,.85); text-shadow: 0 1px 2px rgba(0,0,0,.7); display: flex; gap: 14px; }
+  .keys kbd { background: rgba(30,34,44,.7); padding: 0 4px; border-radius: 3px; font-family: inherit; margin-left: 3px; }
+  .feed { top: 70px; right: 14px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; font-size: 12px; font-weight: 800; }
+  .feed div { background: var(--hud-dark); padding: 4px 8px; border-radius: 4px; }
+  .feed .y { color: #ffd84a; } .feed .p { color: #b39dff; }
+  .hint { left: 50%; top: 64px; transform: translateX(-50%); font-size: 11px; font-weight: 700; color: rgba(255,255,255,.9); text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+  .pick { bottom: 120px; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: 800; text-shadow: 0 1px 3px rgba(0,0,0,.9); }
+  .pick kbd { background: #fff; color: #1e222c; border-radius: 3px; padding: 0 5px; margin-right: 4px; font-family: inherit; }
+  @media (max-width: 640px) {
+    .team { font-size: 18px; } .team .av { width: 28px; height: 28px; } .timer { font-size: 16px; }
+    .hp { width: 130px; } .slot { width: 36px; height: 36px; } .ammo .big { font-size: 32px; } .keys, .feed { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ======= HUD ======= -->
+<div class="hud tl">
+  <span><svg width="14" height="14" viewBox="0 0 14 14"><rect x="1" y="1" width="12" height="12" rx="2" transform="rotate(15 7 7)" fill="#fff"/><rect x="5" y="5" width="4" height="4" transform="rotate(15 7 7)" fill="#1e222c"/></svg></span>
+  <span><svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 3h10M2 7h10M2 11h10" stroke="#fff" stroke-width="2"/></svg></span>
+  <span><svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 2h10v7H6l-3 3V9H2z" fill="#fff"/></svg></span>
+</div>
+<div class="hud chat">Partida: Aula 2ºB · Equipo Amarillo vs Equipo Morado</div>
+
+<div class="hud score">
+  <div class="team a">
+    <div class="av"><svg width="30" height="30" viewBox="0 0 30 30"><rect x="7" y="3" width="16" height="14" rx="3" fill="#f4c542"/><circle cx="12" cy="9" r="1.5"/><circle cx="18" cy="9" r="1.5"/><path d="M11 13q4 3 8 0" stroke="#000" fill="none"/><rect x="5" y="18" width="20" height="12" fill="#2d6fe0"/></svg></div>
+    3
+  </div>
+  <div class="timer">1:26</div>
+  <div class="team b">
+    2
+    <div class="av"><svg width="30" height="30" viewBox="0 0 30 30"><rect x="7" y="3" width="16" height="14" rx="3" fill="#f4c542"/><circle cx="12" cy="9" r="1.5"/><circle cx="18" cy="9" r="1.5"/><path d="M11 13h8" stroke="#000"/><rect x="5" y="18" width="20" height="12" fill="#6b4ce6"/></svg></div>
+  </div>
+</div>
+
+<div class="hud feed">
+  <div><span class="y">Tú</span> ✎ <span class="p">Sacapuntas99</span></div>
+  <div><span class="p">xX_Goma_Xx</span> 📏 <span class="y">Clip_Pro</span></div>
+</div>
+
+<div class="hud cross">
+  <i style="left:13px;top:0"></i><i style="left:13px;bottom:0"></i><i style="top:13px;left:0"></i><i style="top:13px;right:0"></i><i style="left:13px;top:13px;background:#ff4d4d"></i>
+</div>
+<div class="hud pick"><kbd>E</kbd>Recoger Lápiz HB</div>
+
+<div class="hud hp"><div class="fill">100</div></div>
+<div class="hud hint">Arrastra con el ratón para mirar alrededor</div>
+
+<div class="hud ammo">
+  <div class="num"><span class="big">24</span><span class="res">96 <svg width="9" height="11" viewBox="0 0 9 11"><path d="M4.5 0q4.5 5.5 4.5 7a4.5 4 0 0 1-9 0q0-1.5 4.5-7z" fill="#5fa0ff"/></svg></span><div class="name">Boli</div></div>
+  <div class="slots">
+    <div class="slot on"><svg width="34" height="34" viewBox="0 0 34 34"><g transform="rotate(-45 17 17)"><rect x="3" y="14" width="22" height="6" rx="1" fill="#cfe0f5" stroke="#5b6f92"/><rect x="5" y="16" width="18" height="2" fill="#1f4fbf"/><path d="M25 14l6 3-6 3z" fill="#9aa3ad"/><rect x="1" y="13.5" width="4" height="7" fill="#1f4fbf"/></g></svg><b>1</b></div>
+    <div class="slot"><svg width="34" height="34" viewBox="0 0 34 34"><g transform="rotate(-45 17 17)"><rect x="1" y="13" width="32" height="8" fill="#f2d24b" stroke="#8a6f12"/><path d="M5 13v3M9 13v4M13 13v3M17 13v4M21 13v3M25 13v4M29 13v3" stroke="#5a4a10"/></g></svg><b>2</b></div>
+    <div class="slot"><svg width="34" height="34" viewBox="0 0 34 34"><g transform="rotate(-45 17 17)"><rect x="4" y="12" width="20" height="10" rx="2" fill="#2bb24c"/><rect x="24" y="13" width="7" height="8" rx="2" fill="#176b2c"/><rect x="1" y="14" width="3" height="6" fill="#1b1b1b"/></g></svg><b>3</b></div>
+    <div class="slot"><svg width="34" height="34" viewBox="0 0 34 34"><rect x="11" y="9" width="12" height="20" rx="3" fill="#fff" stroke="#888"/><rect x="13" y="4" width="8" height="6" fill="#e63a3a"/><rect x="11" y="15" width="12" height="6" fill="#2d6fe0"/></svg><b>4</b></div>
+  </div>
+</div>
+<div class="hud keys"><span>Marcador<kbd>Tab</kbd></span><span>Inspeccionar<kbd>F</kbd></span><span>Lanzar Tipex<kbd>G</kbd></span></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  // ---------- Básicos ----------
+  const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.autoClear = false;
+  document.body.prepend(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xe4eaf1);
+  scene.fog = new THREE.Fog(0xe4eaf1, 380, 1500);
+
+  // Unidades: centímetros. El jugador mide ~12 cm (tamaño rata); ojos a 10 cm.
+  const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.3, 4000);
+  camera.position.set(0, 10, 335);
+  camera.rotation.order = 'YXZ';
+  let yaw = 0.03, pitch = 0.07;
+
+  const mats = {};
+  const mat = (c, o = {}) => {
+    const k = c + JSON.stringify(o);
+    return mats[k] || (mats[k] = new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: 0.9, metalness: 0, flatShading: true }, o)));
+  };
+  // caja apoyada en el suelo: (x, y-base, z)
+  function box(w, h, d, m, x, y, z, parent = scene) {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), typeof m === 'number' ? mat(m) : m);
+    mesh.position.set(x, y + h / 2, z);
+    mesh.castShadow = mesh.receiveShadow = true;
+    parent.add(mesh);
+    return mesh;
+  }
+  function canvasTex(w, h, draw, rx = 1, ry = 1) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    draw(c.getContext('2d'), w, h);
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry);
+    t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    return t;
+  }
+
+  // ---------- Luces ----------
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xb9b3a6, 0.72));
+  scene.add(new THREE.AmbientLight(0xffffff, 0.18));
+  const sun = new THREE.DirectionalLight(0xfff6e5, 0.75);
+  sun.position.set(900, 650, 150);
+  sun.target.position.set(0, 0, 100);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(4096, 4096);
+  Object.assign(sun.shadow.camera, { left: -650, right: 650, top: 650, bottom: -650, near: 10, far: 2500 });
+  sun.shadow.bias = -0.0004;
+  sun.shadow.radius = 4;
+  scene.add(sun, sun.target);
+
+  // ---------- Aula ----------
+  const RW = 1000, RD = 900, RH = 320; // ancho, fondo, alto
+  // Suelo de baldosas (como la rejilla de estudio)
+  const floorTex = canvasTex(256, 256, (g, w, h) => {
+    g.fillStyle = '#eceef1'; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#e2e5e9'; g.fillRect(0, 0, w / 2, h / 2); g.fillRect(w / 2, h / 2, w / 2, h / 2);
+    g.strokeStyle = '#c9ced5'; g.lineWidth = 4; g.strokeRect(0, 0, w, h);
+    g.strokeStyle = '#d6dadf'; g.lineWidth = 2; g.beginPath(); g.moveTo(w / 2, 0); g.lineTo(w / 2, h); g.moveTo(0, h / 2); g.lineTo(w, h / 2); g.stroke();
+  }, RW / 60, RD / 60);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(RW, RD), new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.95 }));
+  floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+
+  const wallTex = canvasTex(256, 256, (g, w, h) => {
+    g.fillStyle = '#f3f4f6'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#dfe2e7'; g.lineWidth = 3; g.strokeRect(0, 0, w, h);
+  }, 8, 3);
+  const wallMat = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.95 });
+  box(RW, RH, 10, wallMat, 0, 0, -RD / 2);               // pared frontal (pizarra)
+  box(RW, RH, 10, wallMat, 0, 0, RD / 2);                // pared trasera
+  box(10, RH, RD, wallMat, -RW / 2, 0, 0);               // pared izquierda
+  box(RW, 10, RD, 0xf7f7f7, 0, RH, 0);                   // techo
+  // Zócalo
+  box(RW, 12, 2, 0x9aa1ab, 0, 0, -RD / 2 + 6);
+  box(2, 12, RD, 0x9aa1ab, -RW / 2 + 6, 0, 0);
+  // Pared derecha con ventanales
+  const wins = [[-360, -190], [-110, 60], [140, 310]];
+  box(10, 95, RD, wallMat, RW / 2, 0, 0);
+  box(10, 70, RD, wallMat, RW / 2, 250, 0);
+  let zPrev = -RD / 2;
+  for (const [a, b] of wins) { box(10, 155, a - zPrev, wallMat, RW / 2, 95, (a + zPrev) / 2); zPrev = b; }
+  box(10, 155, RD / 2 - zPrev, wallMat, RW / 2, 95, (RD / 2 + zPrev) / 2);
+  for (const [a, b] of wins) {
+    box(14, 5, b - a, 0x9aa1ab, RW / 2, 93, (a + b) / 2);           // alféizar
+    box(12, 155, 4, 0xb8bec7, RW / 2, 95, (a + b) / 2);              // parteluz
+  }
+  // Cielo exterior
+  const sky = new THREE.Mesh(new THREE.PlaneGeometry(4000, 1600), new THREE.MeshBasicMaterial({ color: 0x3f9cf0, fog: false }));
+  sky.position.set(1400, 300, 0); sky.rotation.y = -Math.PI / 2; scene.add(sky);
+  const out = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), new THREE.MeshBasicMaterial({ color: 0xcfd9c4, fog: false }));
+  out.rotation.x = -Math.PI / 2; out.position.set(1000, -60, 0); scene.add(out);
+  // Edificios de bloques al otro lado (estilo arena de bloques)
+  [[900, 0, 110, -300], [980, 0, 160, 0], [860, 0, 90, 260], [1100, 0, 220, 380]].forEach(([x, , h, z]) => box(120, h, 120, 0xe9ecef, x, -60, z));
+
+  // Fluorescentes
+  for (const z of [-250, 0, 250]) for (const x of [-250, 0, 250]) {
+    const l = box(120, 3, 30, new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6 }), x, RH - 3, z);
+    l.castShadow = false;
+  }
+
+  // Pizarra
+  box(420, 140, 4, 0x8c939e, 0, 85, -RD / 2 + 7);
+  const boardTex = canvasTex(1024, 320, (g, w, h) => {
+    g.fillStyle = '#2f5c48'; g.fillRect(0, 0, w, h);
+    g.fillStyle = 'rgba(255,255,255,.07)'; for (let i = 0; i < 40; i++) g.fillRect(Math.random() * w, Math.random() * h, 120, 6);
+    g.font = 'bold 54px Comic Sans MS, cursive'; g.fillStyle = 'rgba(240,245,240,.9)';
+    g.fillText('2x + 3 = 11', 70, 110); g.fillText('x = 4', 70, 200);
+    g.fillStyle = 'rgba(255,226,110,.92)'; g.font = 'bold 50px Comic Sans MS, cursive'; g.fillText('¡EXAMEN VIERNES!', 520, 150);
+  });
+  const board = new THREE.Mesh(new THREE.PlaneGeometry(404, 124), new THREE.MeshStandardMaterial({ map: boardTex, roughness: 1 }));
+  board.position.set(0, 155, -RD / 2 + 9.5); scene.add(board);
+  box(420, 4, 10, 0x8c939e, 0, 81, -RD / 2 + 10);
+  // Reloj
+  const clockTex = canvasTex(128, 128, (g) => {
+    g.fillStyle = '#fff'; g.beginPath(); g.arc(64, 64, 60, 0, 7); g.fill();
+    g.lineWidth = 8; g.strokeStyle = '#222'; g.stroke();
+    g.lineWidth = 6; g.beginPath(); g.moveTo(64, 64); g.lineTo(64, 24); g.moveTo(64, 64); g.lineTo(92, 74); g.stroke();
+  });
+  const clock = new THREE.Mesh(new THREE.CircleGeometry(18, 24), new THREE.MeshBasicMaterial({ map: clockTex }));
+  clock.position.set(300, 250, -RD / 2 + 6); scene.add(clock);
+  // Pósters
+  [[-330, 0xff7a59], [-260, 0x59b8ff], [330, 0x8be06a]].forEach(([x, c], i) => {
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(50, 66), new THREE.MeshStandardMaterial({ color: c }));
+    p.position.set(x, 180 + (i % 2) * 8, -RD / 2 + 6); scene.add(p);
+  });
+  // Puerta
+  box(4, 210, 95, 0xb07a45, -RW / 2 + 6, 0, 250);
+
+  // ---------- Mobiliario ----------
+  const WOOD = 0xd9a86c, METAL = 0x5d6672;
+  function desk(x, z, rot = 0) {
+    const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g);
+    box(120, 4, 60, WOOD, 0, 72, 0, g);
+    box(110, 2, 50, 0xb88a52, 0, 60, -2, g); // bandeja
+    for (const [lx, lz] of [[-56, -26], [56, -26], [-56, 26], [56, 26]]) box(4, 72, 4, METAL, lx, 0, lz, g);
+    box(112, 3, 3, METAL, 0, 10, -26, g);
+  }
+  function chair(x, z, color, rot = 0) {
+    const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g);
+    box(42, 3, 40, color, 0, 43, 0, g);
+    box(42, 24, 3, color, 0, 62, 19, g);
+    for (const [lx, lz] of [[-19, -18], [19, -18]]) box(3, 43, 3, METAL, lx, 0, lz, g);
+    for (const [lx, lz] of [[-19, 18], [19, 18]]) box(3, 86, 3, METAL, lx, 0, lz, g);
+  }
+  const chairCols = [0x2d6fe0, 0xe0412d, 0x2bb24c, 0xf2b705];
+  const rows = [280, 110, -60, -230], cols = [-330, -90, 90, 330];
+  rows.forEach((z, ri) => cols.forEach((x, ci) => {
+    desk(x, z);
+    chair(x, z + 48, chairCols[(ri + ci) % 4], (ri * 7 + ci * 3) % 5 * 0.04 - 0.08);
+  }));
+  // Mesa del profesor
+  box(170, 75, 80, 0xb88a52, 120, 0, -350);
+  box(170, 4, 84, WOOD, 120, 75, -350);
+
+  // ---------- Objetos escolares (coberturas) ----------
+  // Pila de libros
+  function books(x, z, rot, list) {
+    const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g);
+    let y = 0;
+    list.forEach(([w, h, d, c], i) => {
+      const b = box(w, h, d, c, (i % 2) * 1.2 - 0.6, y, (i % 3) * 0.8, g);
+      b.rotation.y = (i % 2 ? 0.06 : -0.04);
+      box(w - 1, h - 0.8, 0.6, 0xf7f3e6, (i % 2) * 1.2 - 0.6, y + 0.4, (i % 3) * 0.8 + d / 2 - 0.1, g); // hojas
+      y += h;
+    });
+  }
+  books(28, 215, 0.25, [[30, 3.2, 22, 0xe0412d], [28, 2.6, 21, 0x2d6fe0], [31, 3.6, 23, 0x2bb24c], [27, 2.2, 20, 0xf2b705], [29, 3, 21, 0x7d5cff]]);
+  books(-150, 20, -0.4, [[30, 3, 22, 0x2d6fe0], [28, 4, 21, 0xff8a3d], [30, 2.8, 22, 0xe0412d]]);
+
+  // Lápiz HB tirado
+  (() => {
+    const g = new THREE.Group(); g.position.set(-14, 0.45, 268); g.rotation.y = 1.15; scene.add(g);
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 15.5, 6), mat(0xf6c21c)); body.rotation.z = Math.PI / 2; g.add(body);
+    const fer = new THREE.Mesh(new THREE.CylinderGeometry(0.47, 0.47, 1.2, 6), mat(0xc9ced6, { metalness: 0.6, roughness: 0.4 })); fer.rotation.z = Math.PI / 2; fer.position.x = -8.35; g.add(fer);
+    const er = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 1, 6), mat(0xef7c9a)); er.rotation.z = Math.PI / 2; er.position.x = -9.4; g.add(er);
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(0.45, 2, 6), mat(0xf1d2a6)); tip.rotation.z = -Math.PI / 2; tip.position.x = 8.75; g.add(tip);
+    const lead = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.6, 6), mat(0x333333)); lead.rotation.z = -Math.PI / 2; lead.position.x = 9.6; g.add(lead);
+    g.traverse(o => { o.castShadow = o.receiveShadow = true; });
+  })();
+  // Goma de borrar
+  (() => {
+    const g = new THREE.Group(); g.position.set(-24, 0, 236); g.rotation.y = -0.5; scene.add(g);
+    box(6, 1.2, 2.2, 0xfbc4d2, 0, 0, 0, g);
+    box(3.2, 1.3, 2.3, 0x2d6fe0, 1.4, -0.02, 0, g);
+  })();
+  // Regla en el suelo
+  (() => {
+    const t = canvasTex(512, 32, (g, w, h) => {
+      g.fillStyle = '#bfe3ff'; g.fillRect(0, 0, w, h); g.fillStyle = '#1e3a5a';
+      for (let i = 0; i <= 30; i++) { const x = 8 + i * 16; g.fillRect(x, 0, 2, i % 5 ? 8 : 14); }
+    });
+    const r = new THREE.Mesh(new THREE.BoxGeometry(30, 0.25, 3), [mat(0x9fd0f7), mat(0x9fd0f7), new THREE.MeshStandardMaterial({ map: t, transparent: true, opacity: 0.85 }), mat(0x9fd0f7), mat(0x9fd0f7), mat(0x9fd0f7)]);
+    r.position.set(48, 0.13, 250); r.rotation.y = 0.35; r.receiveShadow = true; scene.add(r);
+  })();
+  // Estuche
+  (() => {
+    const g = new THREE.Group(); g.position.set(-62, 0, 160); g.rotation.y = 0.6; scene.add(g);
+    box(22, 6, 8, 0x2a2f3a, 0, 0, 0, g);
+    box(22, 0.8, 1, 0xc9ced6, 0, 6, 0, g);
+    box(6, 1, 1.4, 0xff4d4d, 9, 6.3, 0, g);
+  })();
+  // Bolas de papel
+  [[62, 205, 3.4], [-40, 120, 3], [140, 160, 2.6], [-8, 60, 2.8]].forEach(([x, z, r]) => {
+    const m = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), mat(0xfbfbf7));
+    m.position.set(x, r * 0.85, z); m.rotation.set(x, z, r); m.castShadow = m.receiveShadow = true; scene.add(m);
+  });
+  // Mochila
+  (() => {
+    const g = new THREE.Group(); g.position.set(175, 0, 70); g.rotation.y = -0.5; scene.add(g);
+    box(34, 42, 18, 0xe0412d, 0, 0, 0, g);
+    box(26, 18, 6, 0xb32f1f, 0, 6, 11, g);
+    box(30, 4, 14, 0xb32f1f, 0, 42, 0, g);
+  })();
+  // Virutas de sacapuntas
+  [[10, 300], [16, 304], [6, 296]].forEach(([x, z], i) => {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 1.1, 0.25, 8, 1, true, 0, 4.5), mat(i % 2 ? 0xe8b98a : 0xf6c21c, { side: THREE.DoubleSide }));
+    m.position.set(x, 0.15, z); m.rotation.set(0.2, i, 0); scene.add(m);
+  });
+
+  // ---------- Personajes tipo bloque ----------
+  function faceTex(happy) {
+    return canvasTex(64, 64, (g) => {
+      g.fillStyle = '#f4c542'; g.fillRect(0, 0, 64, 64);
+      g.fillStyle = '#111'; g.fillRect(20, 22, 6, 9); g.fillRect(38, 22, 6, 9);
+      g.lineWidth = 4; g.strokeStyle = '#111'; g.beginPath();
+      if (happy) g.arc(32, 36, 12, 0.2, Math.PI - 0.2); else { g.moveTo(22, 46); g.lineTo(42, 42); }
+      g.stroke();
+    });
+  }
+  function tag(text, color) {
+    const t = canvasTex(256, 64, (g) => {
+      g.font = '900 34px Montserrat, Arial'; g.textAlign = 'center';
+      g.lineWidth = 6; g.strokeStyle = 'rgba(0,0,0,.7)'; g.strokeText(text, 128, 40);
+      g.fillStyle = color; g.fillText(text, 128, 40);
+    });
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, fog: false }));
+    s.scale.set(12, 3, 1); return s;
+  }
+  function blocky({ x, z, rot, torso, legs, name, nameColor, weapon, happy }) {
+    const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; g.scale.setScalar(1.15); scene.add(g);
+    box(1.9, 4, 1.9, legs, -1, 0, 0, g); box(1.9, 4, 1.9, legs, 1, 0, 0, g);
+    box(4, 4, 2, torso, 0, 4, 0, g);
+    box(1.9, 4, 1.9, 0xf4c542, -3, 4, 0, g);
+    const ra = box(1.9, 4, 1.9, 0xf4c542, 3, 4, 0, g);
+    ra.geometry.translate(0, -1.6, 0); ra.position.y += 1.6; ra.rotation.x = -1.2;
+    const skin = mat(0xf4c542);
+    const head = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.4, 2.4), [skin, skin, skin, skin, new THREE.MeshStandardMaterial({ map: faceTex(happy), roughness: 0.9 }), skin]);
+    head.position.set(0, 9.25, 0); head.castShadow = true; g.add(head);
+    if (weapon === 'regla') {
+      const r = box(0.8, 0.15, 15, 0xf2d24b, 3, 6.2, -6.8, g); r.rotation.x = 0.25;
+    } else if (weapon === 'rotulador') {
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 7, 8), mat(0x2bb24c)); m.rotation.x = Math.PI / 2; m.position.set(3, 6.3, -3.5); m.castShadow = true; g.add(m);
+      const c = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 2, 8), mat(0x176b2c)); c.rotation.x = Math.PI / 2; c.position.set(3, 6.3, -7.6); g.add(c);
+    }
+    const t = tag(name, nameColor); t.position.set(0, 14, 0); g.add(t);
+    return g;
+  }
+  blocky({ x: -12, z: 250, rot: 0.25, torso: 0x6b4ce6, legs: 0x2a2f3a, name: 'xX_Goma_Xx', nameColor: '#c9b8ff', weapon: 'regla' });
+  blocky({ x: -40, z: 95, rot: 0.3, torso: 0x6b4ce6, legs: 0x3a3f4a, name: 'Sacapuntas99', nameColor: '#c9b8ff', weapon: 'rotulador' });
+  blocky({ x: 115, z: -120, rot: -0.6, torso: 0xf2b705, legs: 0x2d6fe0, name: 'Clip_Pro', nameColor: '#ffe27a', weapon: 'regla', happy: true });
+
+  // Manchas de tinta en el suelo y en un libro (impactos)
+  [[22, 196, 2.2], [35, 188, 1.4], [-30, 140, 1.8]].forEach(([x, z, r]) => {
+    const m = new THREE.Mesh(new THREE.CircleGeometry(r, 7), new THREE.MeshStandardMaterial({ color: 0x1f4fbf, roughness: 0.3 }));
+    m.rotation.x = -Math.PI / 2; m.position.set(x, 0.05, z); scene.add(m);
+  });
+
+  // ---------- Arma en primera persona: BOLI ----------
+  const vmScene = new THREE.Scene();
+  const vmCam = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.01, 10);
+  vmScene.add(new THREE.HemisphereLight(0xffffff, 0x8a8f99, 0.85));
+  const vmSun = new THREE.DirectionalLight(0xffffff, 0.75); vmSun.position.set(2, 3, 1); vmScene.add(vmSun);
+
+  const gun = new THREE.Group(); vmScene.add(gun);
+  const vm = (geo, m, x, y, z, rx = 0, ry = 0, rz = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); gun.add(o); return o; };
+  const HALF = Math.PI / 2;
+  const clear = new THREE.MeshStandardMaterial({ color: 0xcfe0f5, transparent: true, opacity: 0.82, roughness: 0.15, metalness: 0.1, flatShading: true });
+  const blue = mat(0x1f4fbf, { roughness: 0.5 });
+  const steel = mat(0xc9ced6, { metalness: 0.7, roughness: 0.3 });
+  // cuerpo hexagonal
+  vm(new THREE.CylinderGeometry(0.042, 0.042, 0.95, 6), clear, 0, 0, -0.05, HALF, 0, 0);
+  // carga de tinta
+  vm(new THREE.CylinderGeometry(0.012, 0.012, 0.95, 8), blue, 0, 0, -0.07, HALF);
+  // cono delantero
+  vm(new THREE.CylinderGeometry(0.026, 0.042, 0.13, 6), clear, 0, 0, -0.585, HALF);
+  vm(new THREE.CylinderGeometry(0.008, 0.026, 0.05, 8), steel, 0, 0, -0.675, HALF);
+  vm(new THREE.SphereGeometry(0.008, 8, 6), blue, 0, 0, -0.703);
+  // tapón trasero
+  vm(new THREE.CylinderGeometry(0.03, 0.034, 0.06, 8), blue, 0, 0, 0.45, HALF);
+  // capuchón puesto detrás + clip = mira
+  vm(new THREE.CylinderGeometry(0.05, 0.05, 0.22, 6), blue, 0, 0, 0.33, HALF);
+  vm(new THREE.BoxGeometry(0.018, 0.03, 0.2), blue, 0, 0.062, 0.3);
+  // alza (anillo de "mira" en la punta, estilo arma)
+  vm(new THREE.TorusGeometry(0.022, 0.007, 6, 12), mat(0x2a2f3a), 0, 0.08, -0.45);
+  vm(new THREE.BoxGeometry(0.012, 0.045, 0.012), mat(0x2a2f3a), 0, 0.055, -0.45);
+  // "cargador" de tinta (cartucho bajo el boli)
+  vm(new THREE.BoxGeometry(0.05, 0.13, 0.08), mat(0x2d6fe0), 0, -0.1, -0.1, 0.25);
+  vm(new THREE.BoxGeometry(0.052, 0.03, 0.082), mat(0xffffff), 0, -0.07, -0.1, 0.25);
+
+  // brazo derecho (manga + mano de bloque)
+  const sleeve = mat(0xf2b705), hand = mat(0xf4c542);
+  vm(new THREE.BoxGeometry(0.1, 0.1, 0.11), hand, 0.035, -0.07, 0.17);
+  vm(new THREE.BoxGeometry(0.13, 0.13, 0.5), sleeve, 0.12, -0.17, 0.45, 0.35, -0.3);
+
+  gun.traverse(o => { if (o.isMesh) o.renderOrder = 1; });
+  // brazo izquierdo (entra desde abajo a la izquierda, como en los shooters de bloques)
+  const leftArm = new THREE.Group(); vmScene.add(leftArm);
+  const la1 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.5), sleeve); la1.position.set(0, 0, 0.25); leftArm.add(la1);
+  const la2 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), hand); la2.position.set(0, 0, -0.04); leftArm.add(la2);
+  leftArm.position.set(-0.2, -0.36, -0.62); leftArm.rotation.set(0.55, -0.45, 0);
+
+  const gunBase = new THREE.Vector3(0.2, -0.19, -0.42);
+  gun.position.copy(gunBase);
+  gun.rotation.set(0.06, 0.14, -0.06);
+
+  // ---------- Controles: arrastrar para mirar ----------
+  let drag = null;
+  renderer.domElement.addEventListener('pointerdown', e => { drag = [e.clientX, e.clientY]; renderer.domElement.setPointerCapture(e.pointerId); });
+  addEventListener('pointerup', () => drag = null);
+  addEventListener('pointermove', e => {
+    if (!drag) return;
+    yaw -= (e.clientX - drag[0]) * 0.004; pitch -= (e.clientY - drag[1]) * 0.004;
+    pitch = Math.max(-1.2, Math.min(1.3, pitch)); drag = [e.clientX, e.clientY];
+  });
+  addEventListener('resize', () => {
+    renderer.setSize(innerWidth, innerHeight);
+    camera.aspect = vmCam.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix(); vmCam.updateProjectionMatrix();
+  });
+
+  // ---------- Bucle ----------
+  const clockT = new THREE.Clock();
+  (function loop() {
+    const t = clockT.getElapsedTime();
+    camera.rotation.set(pitch, yaw, 0);
+    gun.position.set(gunBase.x + Math.sin(t * 1.6) * 0.004, gunBase.y + Math.sin(t * 3.2) * 0.003, gunBase.z);
+    renderer.clear();
+    renderer.render(scene, camera);
+    renderer.clearDepth();
+    renderer.render(vmScene, vmCam);
+    requestAnimationFrame(loop);
+  })();
+})();
+</script>
+</body>
+</html>

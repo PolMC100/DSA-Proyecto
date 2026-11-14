@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Acceso de jugadores</title>
+</head>
+<body>
+<h1>Jugadores</h1>
+
+<h2>Iniciar sesión</h2>
+<form id="login-form" action="/dsaApp/auth/login" method="post">
+    <div>
+        <label for="login-usuario">Usuario</label>
+        <input id="login-usuario" name="usuario" minlength="3" maxlength="30" required>
+    </div>
+    <div>
+        <label for="login-password">Contraseña</label>
+        <input id="login-password" name="password" type="password"  required>
+    </div>
+    <button type="submit">Iniciar sesión</button>
+    <pre aria-live="polite"></pre>
+</form>
+
+<h2>Registrarse</h2>
+<form id="register-form" action="/dsaApp/auth/register" method="post">
+    <div>
+        <label for="register-usuario">Usuario</label>
+        <input id="register-usuario" name="usuario"  minlength="3" maxlength="30" required>
+    </div>
+    <div>
+        <label for="register-password">Contraseña</label>
+        <input id="register-password" name="password" type="password"  required>
+    </div>
+    <button type="submit">Registrar jugador</button>
+    <pre aria-live="polite"></pre>
+</form>
+
+<script>
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', async event => {
+            event.preventDefault();
+            const resultado = form.querySelector('pre');
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(Object.fromEntries(new FormData(form)))
+                });
+                resultado.textContent = JSON.stringify(await response.json(), null, 2);
+            } catch {
+                resultado.textContent = 'No se ha podido conectar con el servidor.';
+            }
+        });
+    });
+</script>
+</body>
+</html>

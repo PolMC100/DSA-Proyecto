@@ -1,14 +1,16 @@
-package edu.upc.dsa.domain.models;
+package edu.upc.dsa;
 
-import edu.upc.dsa.domain.repository.JugadorManager;
-import edu.upc.dsa.domain.repository.JugadorManagerImpl;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import edu.upc.dsa.domain.models.*;
+import edu.upc.dsa.domain.models.Partida.Estado;
+import edu.upc.dsa.domain.repository.*;
+import org.junit.*;
+import org.junit.runner.RunWith;
+import org.junit.experimental.runners.Enclosed;
+import java.util.*;
+import java.util.concurrent.*;
+import static org.junit.Assert.*;
 
-/** Compatibilidad del modelo común, sin depender del Singleton del catálogo. */
-public class JugadorIntegracionTest {
+public class ModelosTest {
     private Jugador jugador;
     private Arma arma;
     private Granada granada;
@@ -27,7 +29,7 @@ public class JugadorIntegracionTest {
 
     @After
     public void tearDown() {
-        JugadorManagerImpl.getInstance().limpiar();
+        JuegoManagerImpl.getInstance().limpiar();
     }
 
     @Test
@@ -37,6 +39,34 @@ public class JugadorIntegracionTest {
         Assert.assertEquals("J2", jugador.getIdJugador());
         jugador.setIdJugador("J3");
         Assert.assertEquals("J3", jugador.getId());
+    }
+
+    @Test
+    public void settersDeNivelActualizanLosTresTiposDeObjeto() {
+        arma.setNivelRequerido(4);
+        granada.setNivelRequerido(3);
+        complemento.setNivelRequerido(5);
+        Assert.assertEquals(Integer.valueOf(4), arma.getNivelRequerido());
+        Assert.assertEquals(Integer.valueOf(3), granada.getNivelRequerido());
+        Assert.assertEquals(Integer.valueOf(5), complemento.getNivelRequerido());
+    }
+
+    @Test
+    public void copiaAislaTambienLosObjetosDelInventario() {
+        Jugador copia = new Jugador(jugador);
+        copia.getInventario().getArmas().get(0).setPrecio(0);
+        copia.getInventario().getComplementos().get(0).setNivelRequerido(99);
+        Assert.assertEquals(Integer.valueOf(300), jugador.getInventario().getArmas().get(0).getPrecio());
+        Assert.assertEquals(Integer.valueOf(2), jugador.getInventario().getComplementos().get(0).getNivelRequerido());
+    }
+
+    @Test
+    public void consumirUnTipoNuncaCompradoNoFallaNiCreaCantidadesNegativas() {
+        Inventario inventario = new Inventario();
+        Assert.assertEquals(-1, inventario.useGranada(granada));
+        Assert.assertEquals(Integer.valueOf(0), inventario.checkGranadasQty(granada));
+        Assert.assertThrows(IllegalArgumentException.class, () -> inventario.addGranada(granada, -1));
+        Assert.assertTrue(inventario.getGranadas().isEmpty());
     }
 
     @Test
@@ -107,7 +137,7 @@ public class JugadorIntegracionTest {
 
     @Test
     public void consultasDelGestorNoExponenColeccionesInternas() throws Exception {
-        JugadorManager manager = JugadorManagerImpl.getInstance();
+        JuegoManager manager = JuegoManagerImpl.getInstance();
         manager.limpiar();
         Jugador alta = manager.registrarJugador("J1", "Cristian", false);
         alta.getInventario().addArma(arma);

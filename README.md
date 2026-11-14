@@ -1,24 +1,26 @@
 # DSA-Proyecto
+
 Proyecto Java 25 con Maven, Jersey y Grizzly, documentación Swagger, trazas Log4j2 y pruebas JUnit.
 
-## Configuración del proyecto
+## Compilación, pruebas y ejecución
 
-### Estructura
-
-- `src/main/java`: código Java.
-- `src/main/resources`: recursos de la aplicación.
-- `src/test/java`: pruebas.
-- `src/test/resources`: recursos de las pruebas.
-
-### Compilación
-
-Requiere JDK 25 o superior y Maven.
+Requiere JDK 25 o superior y Maven. En IntelliJ IDEA, abrir `pom.xml` como proyecto Maven.
 
 ```sh
 mvn compile
+mvn clean test
+mvn exec:java
 ```
 
-En IntelliJ IDEA, abrir el archivo `pom.xml` como proyecto Maven.
+- API: `http://localhost:8080/dsaApp/`
+- Estado: `http://localhost:8080/dsaApp/status`
+- Swagger JSON: `http://localhost:8080/dsaApp/swagger.json`
+- Swagger UI: `http://localhost:8080/swagger/`
+- Para detener el servidor, pulsar Enter o Ctrl+C.
+
+Los datos se conservan en memoria durante la ejecución. Las pruebas HTTP utilizan
+puertos libres y cierran sus clientes y servidores. Las pruebas de catálogo y
+compras crean gestores independientes para evitar compartir datos entre casos.
 
 ## Idea del juego
 
@@ -27,156 +29,184 @@ El escenario es el aula de DSA y los jugadores tienen el tamaño de una hormiga.
 
 ### Partidas
 
-- Cada partida dura **5 minutos**.
-- Participan un jugador humano y bots, con un **máximo de 10 participantes en total**.
-- Los jugadores pueden reaparecer un número ilimitado de veces mientras dure la partida.
-- Cada partida dispone de un marcador (*scoreboard*) con los resultados de sus participantes.
+- Cada partida dura **5 minutos** y admite un humano y entre cero y nueve bots.
+- El humano debe estar registrado. Los bots se crean como participantes de esa partida.
+- Las reapariciones son ilimitadas mientras la partida esté en curso.
+- Los estados son `PENDIENTE`, `EN_CURSO` y `FINALIZADA`.
+- Cada partida tiene un marcador, incluso si finaliza sin ninguna baja.
+- El tiempo se comprueba al consultar o ejecutar acciones; no hay un temporizador en segundo plano.
 
 ### Tienda y progresión
 
-- Los jugadores ganan créditos en las partidas y pueden gastarlos en armas, granadas y complementos.
-- La experiencia permite subir de nivel y desbloquear armas, granadas y complementos.
-- Los objetos se pueden comprar desde el menú o durante una partida.
-- Las compras se guardan en el inventario del jugador y se pueden usar en la misma partida.
-- Las granadas son consumibles: se gastan al usarlas y hay que comprarlas de nuevo.
+- El alta crea un perfil de nivel 1, experiencia 0, créditos 0 y vida base 100.
+- La regla provisional es `nivel = 1 + experiencia / 100`, con división entera.
+- Cada baja suma 100 puntos de experiencia. Al finalizar, los créditos ganados son `10 * bajas + 50`.
+- Solo los participantes humanos reciben progresión persistida; los bots aparecen en el marcador.
+- Una recompensa se aplica una sola vez por partida y jugador. Un fallo permite reintentar sin pagar dos veces.
+- Los créditos son enteros. Las compras comprueban nivel, saldo y cantidad antes de actualizar saldo e inventario conjuntamente.
+- El nombre del objeto es su identificador en el catálogo; por ejemplo, `Pistola`, `Humo` o `Chaleco`.
+- Un requisito de nivel 0 significa que no hace falta desbloquear el objeto.
+- Las armas y complementos se compran una vez. Las granadas admiten varias unidades y se consumen al usarlas.
+- Se puede comprar desde el menú o durante una partida: la compra pertenece al perfil y no depende del estado de una partida.
 
-## Modelo de clases
+## Estructura simplificada
 
-| Entidad | Atributos y relaciones | Tipos o ejemplos |
-| --- | --- | --- |
-| Jugador | Nombre, vida, inventario, experiencia, nivel y créditos. | Humano o bot. |
-| Arma | Nombre, munición, cadencia, daño, precio y nivelRequerido. | Pistola, escopeta, rifle, ametralladora y francotirador. |
-| Granada | Nombre, daño, radio, efecto, duración del efecto, precio y nivelRequerido. | Fragmentación, humo y flash. |
-| Complemento | Nombre, tipo, efecto, precio y nivelRequerido. | Chaleco, casco y jetpack. |
-| Partida | Marcador, tiempo y jugadores participantes. | Duración de 5 minutos y hasta 10 participantes. |
-| Scoreboard | Colección de resultados de los jugadores de una partida. | Un marcador por partida. |
-| ResultadoJugador | Jugador, partida, bajas (*kills*), muertes, puntuación y créditos ganados. | Un resultado por jugador y partida. |
-
-### Resultados de una partida
-
-`ResultadoJugador` recoge las estadísticas de un jugador en una partida concreta:
-
-- **Jugador:** participante al que pertenecen las estadísticas.
-- **Partida:** partida en la que se han obtenido.
-- **Bajas y muertes:** número de eliminaciones realizadas y veces que ha muerto.
-- **Puntuación:** experiencia ganada por el jugador en esa partida.
-- **Créditos ganados:** créditos obtenidos en esa partida.
-
-El `Scoreboard` reúne los resultados de todos los participantes. Las estadísticas
-individuales se guardan en `ResultadoJugador`. La experiencia y los créditos de
-`Jugador` representan los valores acumulados del jugador; los de `ResultadoJugador`
-representan lo ganado en una partida concreta.
-
-## Estructura de desarrollo
-
-El servidor utiliza Jersey y Grizzly, con Swagger para documentar
-la API, Log4j2 para las trazas y JUnit para las pruebas.
+Se sigue el esquema de `DSA-Minim-Real`: un servicio REST, una interfaz de gestor,
+una implementación en memoria y los modelos del dominio. El código de producción
+se ha reducido de 49 a **13 archivos Java**.
 
 ```text
-pom.xml
-public/
-└── swagger/                         # Interfaz de documentación de la API
-src/
-├── main/
-│   ├── java/edu/upc/dsa/
-│   │   ├── Main.java                # Arranque del servidor Grizzly
-│   │   ├── MyExceptionMapper.java   # Pendiente: conversión de excepciones (Azahara)
-│   │   ├── domain/
-│   │   │   ├── models/              # Jugador, Arma, Granada, Partida, etc.
-│   │   │   └── repository/          # Interfaces *Manager e implementaciones *ManagerImpl
-│   │   ├── services/               # StatusService, SwaggerService y futuros recursos del juego
-│   │   └── util/                   # Adaptadores y utilidades necesarios
-│   └── resources/
-│       └── log4j2.properties
-└── test/
-    ├── java/edu/upc/dsa/            # Pruebas de gestores y servicios REST
-    └── resources/                  # Datos y configuración de pruebas
+src/main/java/edu/upc/dsa/
+├── Main.java
+├── MyExceptionMapper.java
+├── domain/
+│   ├── models/
+│   │   ├── Jugador.java
+│   │   ├── Inventario.java
+│   │   ├── Arma.java
+│   │   ├── Granada.java
+│   │   ├── Complemento.java
+│   │   ├── Partida.java
+│   │   ├── Scoreboard.java
+│   │   └── ResultadoJugador.java
+│   └── repository/
+│       ├── JuegoManager.java
+│       └── JuegoManagerImpl.java
+└── services/
+    └── JuegoService.java
+src/test/java/edu/upc/dsa/
+├── JuegoManagerTest.java
+├── JuegoServiceTest.java
+└── ModelosTest.java
 ```
 
+- `JuegoManagerImpl` guarda perfiles, catálogo, partidas, marcadores y pagos. Las compras y recompensas se coordinan dentro del mismo componente, sin gestores intermedios ni observadores.
+- `JuegoService` conserva las rutas HTTP y agrupa sus cuerpos y respuestas pequeños: `Perfil`, `Compra`, `CrearPartida`, `Baja`, `Reaparicion`, `Tiempo`, `Catalogo` y `ContenidoInventario`. No necesitan archivos DTO separados.
+- `Partida` contiene sus tipos `Estado` y `Participante`; `Inventario` contiene el contrato `Comprable` que implementan los tres tipos de objeto.
+- `MyExceptionMapper` convierte excepciones estándar en JSON; no hay un archivo por excepción de negocio.
+- `getInstance()` proporciona el gestor compartido. Los constructores permiten gestores independientes para las pruebas; el reloj se puede sustituir mediante `LongSupplier` de Java.
+- Los ocho archivos de modelos corresponden a entidades del juego. Sus consultas devuelven copias para proteger el estado guardado.
+
+Por ejemplo, la respuesta antes definida en `TiempoDTO.java` está ahora en
+`JuegoService.Tiempo` y conserva el JSON `{idPartida, segundosRestantes}`.
+Las granadas del inventario se representan como una lista `{nombre, cantidad}`.
+Los nombres de las clases Java y del esquema Swagger cambian al agruparse, pero
+se mantienen las rutas, los campos JSON y los códigos HTTP.
+
+El [diagrama de clases](docs/DIAGRAMAS_CLASES.md) describe esta estructura.
+Las pruebas se agrupan por comportamiento en tres archivos y cubren modelos,
+progresión, compras, partidas, resultados, HTTP, copias, errores y concurrencia.
+
+## API disponible
+
+Todas las rutas siguientes son relativas a `/dsaApp`. Los cuerpos y respuestas
+utilizan JSON. Los errores tienen el formato `{"code": 400, "message": "..."}`.
+
+| Método | Ruta | Operación |
+| --- | --- | --- |
+| GET | `/status` | Comprobar el servidor. |
+| POST | `/jugadores` | Registrar un humano; genera un UUID si se omite `id`. |
+| GET | `/jugadores/{id}` | Consultar perfil y progresión. |
+| GET | `/jugadores/{id}/inventario` | Consultar las compras guardadas. |
+| POST | `/jugadores/{id}/inventario/granadas/{nombre}/usar` | Consumir una unidad; 409 si no quedan. |
+| GET | `/tienda/catalogo` | Consultar armas, granadas y complementos. |
+| POST | `/tienda/comprar` | Comprar y devolver el perfil actualizado. |
+| POST | `/partidas` | Crear con `idJugadorHumano` y `numBots`. |
+| POST | `/partidas/crear/{jugadorId}` | Atajo de creación con nueve bots. |
+| GET | `/partidas` | Listar; admite `?estado=EN_CURSO`. |
+| GET | `/partidas/{id}` | Consultar una partida. |
+| POST | `/partidas/{id}/iniciar` | Iniciar. |
+| POST | `/partidas/{id}/bajas` | Registrar `idAsesino` e `idVictima`. |
+| POST | `/partidas/{id}/reapariciones` | Reaparecer mediante `idJugador`. |
+| POST | `/partidas/{id}/finalizar` | Finalizar antes de tiempo. |
+| GET | `/partidas/{id}/tiempo` | Consultar segundos restantes. |
+| GET | `/resultados/scoreboard/{partidaId}` | Consultar clasificación y recompensas. |
+| POST | `/resultados/{partidaId}/recompensas` | Reintentar pagos de una partida finalizada. |
+
+Ejemplo de alta:
+
+```json
+{"id": "J1", "nombre": "Jugador 1"}
+```
+
+El cliente no puede asignarse experiencia, nivel ni créditos mediante el alta.
+Una vez ganados los créditos necesarios, este cuerpo compra dos granadas de humo:
+
+```json
+{"jugadorId": "J1", "itemId": "Humo", "cantidad": 2}
+```
+
+Si se omite `cantidad`, vale 1. Las armas y complementos requieren exactamente
+una unidad. Cantidades no positivas o costes fuera del rango de `int` devuelven
+400; nivel o saldo insuficientes, 403; recursos inexistentes, 404; armas o
+complementos repetidos, 409. Una compra rechazada no modifica el perfil.
 
 ## To-do
 
 ### Reparto de responsabilidades del backend
 
-| Responsable | Área | Entregables principales | Dependencias |
-| --- | --- | --- | --- |
-| Pol | Base del proyecto y arquitectura | Maven, servidor, configuración de logs, estructura de paquetes y coordinación del diagrama. | Acuerdos iniciales del equipo. |
-| Cristian | Jugadores y progresión | Modelo y gestor de jugadores; perfil, experiencia, niveles y desbloqueos; pruebas del módulo. | Reglas de progresión acordadas con integrantes 3 y 5. |
-| Gur | Catálogo, tienda e inventario | Armas, granadas, complementos e inventario; gestor de catálogo y compras; pruebas del módulo. | Saldo y desbloqueos del módulo de jugadores. |
-| Franklin | Partidas | Modelo y gestor de partidas; participantes, estados, duración y reglas de reaparición; pruebas del módulo. | Jugadores y contrato de comunicación con el cliente. |
-| Tiffany | Resultados y marcador | `ResultadoJugador`, `Scoreboard`, clasificación y cálculo de recompensas; pruebas del módulo. | Partidas y operaciones de actualización de jugadores. |
-| Azahara | API REST e integración | Servicios REST, errores HTTP, Swagger y pruebas HTTP del flujo completo. | Interfaces de los gestores acordadas con integrantes 2–5 y servidor del integrante 1. |
+| Responsable | Área | Entregables principales |
+| --- | --- | --- |
+| Pol | Base y arquitectura | Maven, servidor, logs, paquetes y diagrama. |
+| Cristian | Jugadores y progresión | Perfiles, experiencia, niveles, créditos y operaciones atómicas. |
+| Gur | Catálogo, tienda e inventario | Objetos, catálogo, compras y consumo de granadas. |
+| Franklin | Partidas | Participantes, estados, duración, bajas y reapariciones. |
+| Tiffany | Resultados | Marcador, clasificación, cálculo y aplicación de recompensas. |
+| Azahara | API REST e integración | Recursos, errores JSON, Swagger y pruebas HTTP. |
 
 ### Pol — base del proyecto y arquitectura
 
-- [x] Preparar los paquetes `edu.upc.dsa` siguiendo la estructura de referencia.
-- [x] Configurar en `pom.xml` Jersey, Grizzly, serialización JSON, Swagger, Log4j2, JUnit y el arranque con Maven.
-- [x] Implementar `Main` con arranque y parada del servidor, registro de servicios y publicación de `public/swagger`.
-- [x] Configurar `log4j2.properties` y comprobar que se registran operaciones y errores.
-- [ ] Coordinar el diagrama de clases con los modelos y contratos aportados por el equipo.
-- [x] Documentar los comandos de compilación, pruebas y ejecución, y comprobarlos desde una copia limpia del proyecto.
-
-El diagrama queda pendiente de los modelos y contratos de Cristian, Gur, Franklin
-y Tiffany. La infraestructura ya permite que cada módulo se desarrolle y pruebe
-siguiendo la estructura acordada.
-
-La base se ha verificado con JDK 25 desde una copia sin resultados de compilación
-previos: seis pruebas HTTP, arranque con Maven, acceso a estado y Swagger, y parada
-interactiva con liberación del puerto.
+- [x] Configurar Java 25, Maven, Jersey, Grizzly, JSON, Swagger, Log4j2 y JUnit.
+- [x] Implementar arranque, parada y publicación de `public/swagger`.
+- [x] Mantener la estructura de paquetes y el diagrama de clases actualizado.
+- [x] Documentar compilación, pruebas y ejecución.
 
 ### Cristian — jugadores y progresión
 
-- [ ] Implementar `Jugador`, distinguiendo entre humano y bot, con sus identificadores y atributos acordados.
-- [ ] Definir la interfaz del gestor de jugadores e implementar su versión en memoria.
-- [ ] Implementar la creación y consulta de jugadores y la actualización de sus créditos y experiencia.
-- [ ] Implementar el cálculo de nivel y la consulta de objetos desbloqueados.
-- [ ] Acordar con integrantes 3 y 5 las operaciones para descontar compras y aplicar recompensas sin duplicarlas.
-- [ ] Probar identificadores duplicados, jugadores inexistentes, saldo insuficiente y cambios de nivel.
+- [x] Implementar humanos y bots, altas y consultas de perfiles.
+- [x] Calcular experiencia, niveles y requisitos de desbloqueo, incluido el requisito 0.
+- [x] Actualizar créditos y experiencia sin exponer los perfiles internos.
+- [x] Coordinar descuento e inventario como una compra atómica.
+- [x] Deduplicar recompensas por partida y jugador.
+- [x] Probar errores, copias, desbordamientos y operaciones simultáneas.
 
 ### Gur — catálogo, tienda e inventario
 
-- [x] Implementar `Arma`, `Granada`, `Complemento` e `Inventario` con las relaciones acordadas.
-- [x] Definir la interfaz del gestor de catálogo y tienda e implementar su versión en memoria.
-- [x] Preparar un catálogo inicial con precios, estadísticas y requisitos de desbloqueo.
-- [x] Implementar la consulta del catálogo y la compra desde el menú o durante una partida.
-- [x] Validar saldo y desbloqueo, descontar créditos y añadir el objeto al inventario como una única operación.
-- [x] Implementar la consulta del inventario, el equipamiento y el consumo de granadas.
-- [x] Probar compras válidas, objetos bloqueados, saldo insuficiente y consumo sin unidades disponibles.
+- [x] Implementar objetos, inventario y catálogo inicial.
+- [x] Compartir los datos de compra mediante `Inventario.Comprable` y comprar por identificador.
+- [x] Validar cantidad, nivel, saldo y duplicados antes de guardar la compra.
+- [x] Consultar el inventario y consumir granadas sin cantidades negativas.
+- [x] Probar compras válidas, rechazos, concurrencia y aislamiento del catálogo.
+- [ ] Acordar e implementar el equipamiento de armas y complementos.
 
 ### Franklin — partidas
 
-- [x] Implementar `Partida` y sus estados: pendiente, en curso y finalizada.
-- [x] Definir la interfaz del gestor de partidas e implementar su versión en memoria.
-- [x] Implementar la creación e inicio de partidas con un humano y bots, hasta 10 participantes en total.
-- [x] Implementar el control de los 5 minutos y el cierre de partida según el reparto de responsabilidades con el cliente.
-- [x] Definir y procesar los eventos de baja y reaparición necesarios para actualizar el estado de la partida.
-- [x] Notificar la finalización al módulo de resultados y rechazar acciones incompatibles con el estado de la partida.
-- [x] Probar el límite de participantes, los cambios de estado y el cierre por tiempo sin esperar cinco minutos reales en las pruebas.
-- [x] Integrar partidas con jugadores (el humano tiene que existir), resultados (Observer registrado en `Main`) y el servicio REST `/partidas`.
+- [x] Gestionar un humano y hasta nueve bots, estados y duración de cinco minutos.
+- [x] Validar humano existente, bajas y reapariciones.
+- [x] Inicializar el marcador y actualizar resultados y recompensas desde el gestor único.
+- [x] Devolver copias y serializar las operaciones simultáneas.
+- [x] Probar límites, transiciones y caducidad con un reloj controlado en las pruebas.
 
 ### Tiffany — resultados, marcador y recompensas
 
-- [x] Implementar `ResultadoJugador` y `Scoreboard`, con un único resultado por jugador y partida.
-- [x] Definir la interfaz del gestor de resultados e implementar su versión en memoria.
-- [x] Actualizar bajas y muertes de los participantes y permitir consultar el marcador durante la partida.
-- [x] Ordenar la clasificación con el criterio de puntuación y desempate acordado.
-- [x] Calcular la experiencia y los créditos ganados y aplicar las recompensas al jugador una sola vez.
-- [x] Conservar los resultados de las partidas finalizadas en memoria para su consulta.
-- [x] Probar empates, resultados duplicados y la repetición del cierre de una partida sin duplicar recompensas.
+- [x] Mantener un marcador por partida y un resultado por participante.
+- [x] Actualizar y ordenar por puntos descendentes, bajas descendentes y muertes ascendentes.
+- [x] Aplicar progresión humana mediante `aplicarRecompensaPartida`.
+- [x] Permitir reintentos sin duplicar pagos completados ni cerrar pagos fallidos.
+- [x] Conservar resultados finalizados y devolver copias para consulta.
+- [x] Probar desempates, cierre sin bajas, pagos fallidos y reintentos simultáneos.
 
 ### Azahara — API REST e integración
 
-- [ ] Implementar los recursos REST de jugadores, catálogo, tienda, inventario, partidas y resultados, delegando en los gestores.
-- [ ] Definir las representaciones JSON y evitar referencias circulares entre jugador, partida y resultado.
-- [ ] Implementar `MyExceptionMapper` y unificar las respuestas para datos inválidos, recursos inexistentes y conflictos.
-- [ ] Añadir anotaciones Swagger a las operaciones y configurar `public/swagger` para consultar y probar la API.
-- [ ] Preparar datos de prueba y pruebas HTTP que arranquen y detengan el servidor de forma aislada.
-- [ ] Verificar el flujo completo: crear jugador, consultar catálogo, comprar, iniciar partida, registrar resultados y consultar marcador y recompensas.
-- [ ] Comprobar con el equipo que compras y cierres repetidos o simultáneos mantienen el saldo y las recompensas correctos.
-
+- [x] Conectar las rutas de jugadores, tienda, partidas y resultados con `JuegoManager`.
+- [x] Definir JSON sin referencias circulares ni claves de objetos Java.
+- [x] Centralizar errores de negocio, JSON inválido, rutas, métodos y formatos HTTP.
+- [x] Publicar Swagger y comprobar su contenido por HTTP.
+- [x] Probar el flujo real: alta, partida, recompensa, catálogo, compra e inventario.
+- [x] Usar puertos libres y cerrar clientes y servidores en las pruebas.
 
 ### Entrega del 12/11
 
 - [x] Idea del juego — todo el equipo.
-- [ ] To-do completo
-- [ ] PPT — coordina el integrante 6; cada integrante aporta la explicación de su área y todo el equipo revisa la presentación.
+- [ ] To-do completo: queda pendiente el equipamiento.
+- [ ] PPT — coordina el integrante 6; cada integrante aporta su área y el equipo revisa la presentación.

@@ -9,13 +9,19 @@ public class Scoreboard {
     private boolean procesado; // Evita duplicar recompensas
 
     public Scoreboard() {
-        //Constructor vacío
+        this.clasificacion = new ArrayList<>();
     }
 
     public Scoreboard(String idPartida) {
         this.idPartida = idPartida;
         this.clasificacion = new ArrayList<>();
         this.procesado = false; // Al crearse, aún no se han cobrado las recompensas
+    }
+
+    public Scoreboard(Scoreboard scoreboard) {
+        this(scoreboard.idPartida);
+        scoreboard.clasificacion.forEach(resultado -> this.clasificacion.add(new ResultadoJugador(resultado)));
+        this.procesado = scoreboard.procesado;
     }
 
     public String getIdPartida() {

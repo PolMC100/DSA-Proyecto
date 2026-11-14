@@ -1,6 +1,6 @@
 package edu.upc.dsa.domain.models;
 
-public class Arma {
+public class Arma implements Inventario.Comprable {
     private String nombre;
     private Integer munición;
     private Integer cadencia;
@@ -9,6 +9,10 @@ public class Arma {
     private Integer nivelRequerido;
 
     public Arma() {}
+
+    public Arma(Arma arma) {
+        this(arma.nombre, arma.munición, arma.cadencia, arma.daño, arma.precio, arma.nivelRequerido);
+    }
 
     public Arma(String nombre, Integer munición, Integer cadencia, Integer daño, Integer precio, Integer nivelRequerido) {
         this.nombre = nombre;
@@ -35,5 +39,13 @@ public class Arma {
     public void setPrecio(Integer precio) { this.precio = precio; }
 
     public Integer getNivelRequerido() { return nivelRequerido; }
-    public void setNivelRequerido(Integer precio) { this.nivelRequerido = nivelRequerido; }
+    public void setNivelRequerido(Integer nivelRequerido) { this.nivelRequerido = nivelRequerido; }
+
+    @Override
+    public boolean equals(Object objeto) {
+        return objeto instanceof Arma arma && java.util.Objects.equals(nombre, arma.nombre);
+    }
+
+    @Override
+    public int hashCode() { return java.util.Objects.hashCode(nombre); }
 }
