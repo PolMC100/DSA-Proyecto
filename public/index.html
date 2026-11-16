@@ -47,7 +47,11 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(Object.fromEntries(new FormData(form)))
                 });
-                resultado.textContent = JSON.stringify(await response.json(), null, 2);
+                const perfil = await response.json();
+                if (response.ok && perfil.id) {
+                    localStorage.setItem('jugadorId', perfil.id);
+                }
+                resultado.textContent = JSON.stringify(perfil, null, 2);
             } catch {
                 resultado.textContent = 'No se ha podido conectar con el servidor.';
             }
