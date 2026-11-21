@@ -57,6 +57,19 @@ public class JuegoService {
         return Response.status(201).entity(Perfil.from(manager.registrarJugador(id, jugador.getNombre(), false))).build();
     }
 
+    //ISSUE #39 : Falta @GET para getJugadores, añado.
+
+    @GET
+    @Path("jugadores")
+    @ApiOperation(value = "Listar todos los jugadores registrados", response = Perfil.class, responseContainer = "Lista")
+    public Response getJugadores() {
+        List<Perfil> perfiles = new ArrayList<>();
+        for (Jugador j : manager.getJugadores()) {
+            perfiles.add(Perfil.from(j));
+        }
+        return Response.ok(new GenericEntity<List<Perfil>>(perfiles) { }).build();
+    }
+
     @GET
     @Path("jugadores/{id}")
     @ApiOperation(value = "Consultar perfil y progresión", response = Perfil.class)
