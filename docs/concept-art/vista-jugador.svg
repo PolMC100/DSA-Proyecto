@@ -246,7 +246,7 @@
     <text x="300" y="686" font-size="22" fill="#fff" text-anchor="end">75</text>
   </g>
 
-  <!-- munición -->
+  <!-- munición / ammo renombrado con #40 Issue -->
   <g>
     <rect x="1050" y="24" width="0" height="0"/>
     <rect x="1000" y="640" width="256" height="56" rx="10" fill="#000" opacity="0.5"/>

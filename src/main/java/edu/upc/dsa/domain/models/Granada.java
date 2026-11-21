@@ -2,7 +2,7 @@ package edu.upc.dsa.domain.models;
 
 public class Granada implements Inventario.Comprable {
     private String nombre;
-    private Integer daño;
+    private Integer damage;
     private Double radio;
     private String efecto;
     private Integer duracionEfecto;
@@ -12,13 +12,13 @@ public class Granada implements Inventario.Comprable {
     public Granada() {}
 
     public Granada(Granada granada) {
-        this(granada.nombre, granada.daño, granada.radio, granada.efecto,
+        this(granada.nombre, granada.damage, granada.radio, granada.efecto,
                 granada.duracionEfecto, granada.precio, granada.nivelRequerido);
     }
 
-    public Granada(String nombre, Integer daño, Double radio, String efecto, Integer duracionEfecto, Integer precio, Integer nivelRequerido) {
+    public Granada(String nombre, Integer damage, Double radio, String efecto, Integer duracionEfecto, Integer precio, Integer nivelRequerido) {
         this.nombre = nombre;
-        this.daño = daño;
+        this.damage = damage;
         this.radio = radio;
         this.efecto = efecto;
         this.duracionEfecto = duracionEfecto;
@@ -29,8 +29,8 @@ public class Granada implements Inventario.Comprable {
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) { this.nombre = nombre; }
 
-    public Integer getDaño() { return daño; }
-    public void setDaño(Integer daño) { this.daño = daño; }
+    public Integer getDamage() { return damage; }
+    public void setDamage(Integer damage) { this.damage = damage; }
 
     public Double getRadio() { return radio; }
     public void setRadio(Double radio) { this.radio = radio; }
