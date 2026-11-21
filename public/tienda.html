@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <title>Tienda</title>
+</head>
+<body>
+<h1>Tienda</h1>
+
+<div id="armas">
+    <h3>Armas</h3>
+    <ul></ul>
+</div>
+
+<div id="granadas">
+    <h3>Granadas</h3>
+    <ul></ul>
+</div>
+
+<div id="complementos">
+    <h3>Complementos</h3>
+    <ul></ul>
+</div>
+
+<pre id="mensaje"></pre>
+
+<script>
+    function pintarCategoria(idDiv, items) {
+        const lista = document.querySelector(`#${idDiv} ul`);
+        lista.innerHTML = '';
+
+        items.forEach(item => {
+            const li = document.createElement('li');
+            const { nombre, ...resto } = item;
+            const texto = [
+                ...(nombre ? [`nombre: ${nombre}`] : []),
+                ...Object.entries(resto).map(([clave, valor]) => `${clave}: ${valor}`)
+            ].join(' | ');
+
+            const boton = document.createElement('button');
+            boton.textContent = 'Comprar';
+            boton.onclick = () => comprar(item.id || item.nombre);
+
+            li.append(texto + ' ', boton);
+            lista.appendChild(li);
+        });
+    }
+
+    async function cargarCatalogo() {
+        const response = await fetch('/dsaApp/tienda/catalogo');
+        const catalogo = await response.json();
+
+        pintarCategoria('armas', catalogo.armas || []);
+        pintarCategoria('granadas', catalogo.granadas || []);
+        pintarCategoria('complementos', catalogo.complementos || []);
+    }
+
+    async function comprar(itemId) {
+        const mensaje = document.getElementById('mensaje');
+        const jugadorId = localStorage.getItem('jugadorId');
+
+        if (!jugadorId) {
+            mensaje.textContent = 'Error: no hay jugador guardado en localStorage.';
+            return;
+        }
+
+        try {
+            const response = await fetch('/dsaApp/tienda/comprar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ jugadorId, itemId, cantidad: 1 })
+            });
+
+            const texto = await response.text();
+            if (response.ok) {
+                const perfil = JSON.parse(texto);
+                mensaje.textContent = `Compra valida (${itemId}). Creditos restantes: ${perfil.creditos}`;
+            } else {
+                mensaje.textContent = texto || `Error al comprar (${response.status})`;
+            }
+        } catch {
+            mensaje.textContent = 'No se ha podido conectar con el servidor.';
+        }
+    }
+
+    cargarCatalogo();
+</script>
+</body>
+</html>
