@@ -187,6 +187,99 @@ public class JuegoServiceTest {
         }
 
         @Test
+        public void flujoCompletoOrdenExactoCatalogoCompraPartidaYMarcador() {
+            // 1. Crear jugador (registro + login) y comprobar saldo inicial 0
+            String jugadorId;
+            try (Response response = post("auth/register", credenciales("Azahara", "1234"))) {
+                assertEquals(201, response.getStatus());
+                Perfil creado = response.readEntity(Perfil.class);
+                jugadorId = creado.getId();
+                assertNotNull(jugadorId);
+                assertEquals(1, creado.getNivel());
+                assertEquals(0, creado.getCreditos());
+            }
+            try (Response response = post("auth/login", credenciales("Azahara", "1234"))) {
+                assertEquals(200, response.getStatus());
+                assertEquals(jugadorId, response.readEntity(Perfil.class).getId());
+            }
+
+            // 2. Consultar catálogo completo (armas, granadas y complementos)
+            Catalogo catalogo = target.path("tienda/catalogo").request().get(Catalogo.class);
+            assertEquals(5, catalogo.getArmas().size());
+            assertEquals(3, catalogo.getGranadas().size());
+            assertEquals(3, catalogo.getComplementos().size());
+
+            // 3. Comprar (sin saldo devuelve 403; con saldo guarda arma y granada en inventario)
+            postStatus("tienda/comprar", new Compra(jugadorId, "Pistola"), 403);
+            JuegoManagerImpl.getInstance().sumarExperienciaYCreditos(jugadorId, 100, 1000);
+
+            try (Response response = post("tienda/comprar", new Compra(jugadorId, "Pistola"))) {
+                assertEquals(200, response.getStatus());
+                assertEquals(700, response.readEntity(Perfil.class).getCreditos());
+            }
+            try (Response response = post("tienda/comprar", new Compra(jugadorId, "Humo", 1))) {
+                assertEquals(200, response.getStatus());
+                assertEquals(300, response.readEntity(Perfil.class).getCreditos());
+            }
+            ContenidoInventario inventario = target.path("jugadores/" + jugadorId + "/inventario")
+                    .request().get(ContenidoInventario.class);
+            assertEquals(1, inventario.getArmas().size());
+            assertEquals("Pistola", inventario.getArmas().get(0).getNombre());
+            assertEquals(1, inventario.getGranadas().size());
+            assertEquals("Humo", inventario.getGranadas().get(0).getNombre());
+
+            // 4. Crear e iniciar partida
+            Partida partida;
+            try (Response response = post("partidas", new CrearPartida(jugadorId, 2))) {
+                assertEquals(201, response.getStatus());
+                partida = response.readEntity(Partida.class);
+                assertEquals(Estado.PENDIENTE, partida.getEstado());
+                assertEquals(3, partida.getParticipantes().size());
+            }
+            String rutaPartida = "partidas/" + partida.getId();
+            try (Response response = post(rutaPartida + "/iniciar", "")) {
+                assertEquals(200, response.getStatus());
+                assertEquals(Estado.EN_CURSO, response.readEntity(Partida.class).getEstado());
+            }
+
+            // 5. Registrar resultados (bajas, reaparición y finalización)
+            postStatus(rutaPartida + "/bajas", new Baja(jugadorId, "bot-1"), 201);
+            postStatus(rutaPartida + "/reapariciones", new Reaparicion("bot-1"), 200);
+            postStatus(rutaPartida + "/bajas", new Baja(jugadorId, "bot-1"), 201);
+            postStatus(rutaPartida + "/bajas", new Baja(jugadorId, "bot-2"), 201);
+            try (Response response = post(rutaPartida + "/finalizar", "")) {
+                assertEquals(200, response.getStatus());
+                assertEquals(Estado.FINALIZADA, response.readEntity(Partida.class).getEstado());
+            }
+
+            // 6. Consultar marcador y recompensas (y verificar que no se duplican)
+            Scoreboard scoreboard = target.path("resultados/scoreboard/" + partida.getId())
+                    .request().get(Scoreboard.class);
+            assertEquals(partida.getId(), scoreboard.getIdPartida());
+            assertTrue(scoreboard.isProcesado());
+            assertEquals(3, scoreboard.getClasificacion().size());
+
+            ResultadoJugador primero = scoreboard.getClasificacion().get(0);
+            assertEquals(jugadorId, primero.getIdJugador());
+            assertEquals(3, primero.getBajas());
+            assertEquals(0, primero.getMuertes());
+            assertEquals(300, primero.getPuntuacion());
+            assertEquals(80, primero.getCreditosGanados());
+
+            try (Response response = post("resultados/" + partida.getId() + "/recompensas", "")) {
+                assertEquals(200, response.getStatus());
+                Scoreboard reintento = response.readEntity(Scoreboard.class);
+                assertEquals(partida.getId(), reintento.getIdPartida());
+                assertTrue(reintento.isProcesado());
+            }
+
+            Perfil perfilFinal = target.path("jugadores/" + jugadorId).request().get(Perfil.class);
+            assertEquals(5, perfilFinal.getNivel());
+            assertEquals(400, perfilFinal.getExperiencia());
+            assertEquals(380, perfilFinal.getCreditos());
+        }
+
+        @Test
         public void erroresDeCompraSonRealesYNoModificanSaldo() throws Exception {
             prepararJugador();
             postStatus("tienda/comprar", new Compra("J1", "Humo", -2), 400);
