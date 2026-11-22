@@ -334,6 +334,152 @@ public class JuegoServiceTest {
                 assertEquals(404, response.readEntity(ErrorEntity.class).getCode());
             }
         }
+        @Test
+        public void comprasRepetidasYSimultaneasPorHttpMantienenSaldoEInventario() throws Exception {
+            JuegoManager manager = JuegoManagerImpl.getInstance();
+            manager.registrarJugador("J1", "Tester1", false);
+            manager.sumarExperienciaYCreditos("J1", 500, 2000);
+            manager.registrarJugador("J2", "Tester2", false);
+            manager.sumarExperienciaYCreditos("J2", 500, 500);
+
+            postStatus("tienda/comprar", new Compra("J1", "Chaleco"), 200);
+            postStatus("tienda/comprar", new Compra("J1", "Chaleco"), 409);
+            assertEquals(1300, manager.getCreditos("J1"));
+
+            int hilos = 4;
+            CountDownLatch salidaArmas = new CountDownLatch(1);
+            ExecutorService pool = Executors.newFixedThreadPool(hilos);
+            try {
+                List<Callable<Integer>> tareasArma = new ArrayList<>();
+                for (int i = 0; i < hilos; i++) {
+                    tareasArma.add(() -> {
+                        salidaArmas.await();
+                        try (Response r = post("tienda/comprar", new Compra("J1", "Pistola"))) {
+                            return r.getStatus();
+                        }
+                    });
+                }
+                List<Future<Integer>> futurosArma = new ArrayList<>();
+                for (Callable<Integer> tarea : tareasArma) futurosArma.add(pool.submit(tarea));
+                salidaArmas.countDown();
+
+                int okArma = 0;
+                int conflictoArma = 0;
+                for (Future<Integer> f : futurosArma) {
+                    int code = f.get();
+                    if (code == 200) okArma++;
+                    else if (code == 409) conflictoArma++;
+                }
+                assertEquals(1, okArma);
+                assertEquals(3, conflictoArma);
+                assertEquals(1000, manager.getCreditos("J1"));
+                ContenidoInventario inv1 = target.path("jugadores/J1/inventario")
+                        .request().get(ContenidoInventario.class);
+                assertEquals(1, inv1.getArmas().size());
+
+                CountDownLatch salidaGranadas = new CountDownLatch(1);
+                List<Callable<Integer>> tareasGranada = new ArrayList<>();
+                for (int i = 0; i < hilos; i++) {
+                    tareasGranada.add(() -> {
+                        salidaGranadas.await();
+                        try (Response r = post("tienda/comprar", new Compra("J2", "Fragmentación", 1))) {
+                            return r.getStatus();
+                        }
+                    });
+                }
+                List<Future<Integer>> futurosGranada = new ArrayList<>();
+                for (Callable<Integer> tarea : tareasGranada) futurosGranada.add(pool.submit(tarea));
+                salidaGranadas.countDown();
+
+                int okGranada = 0;
+                int sinSaldo = 0;
+                for (Future<Integer> f : futurosGranada) {
+                    int code = f.get();
+                    if (code == 200) okGranada++;
+                    else if (code == 403) sinSaldo++;
+                }
+                assertEquals(1, okGranada);
+                assertEquals(3, sinSaldo);
+                assertEquals(0, manager.getCreditos("J2"));
+                ContenidoInventario inv2 = target.path("jugadores/J2/inventario")
+                        .request().get(ContenidoInventario.class);
+                assertEquals(1, inv2.getGranadas().get(0).getCantidad());
+            } finally {
+                pool.shutdownNow();
+            }
+        }
+
+        @Test
+        public void cierresYRecompensasRepetidosOSimultaneosPorHttpNoDuplicanPagos() throws Exception {
+            JuegoManagerImpl.getInstance().registrarJugador("J1", "Tester", false);
+            Partida partida;
+            try (Response response = post("partidas", new CrearPartida("J1", 1))) {
+                assertEquals(201, response.getStatus());
+                partida = response.readEntity(Partida.class);
+            }
+            String rutaPartida = "partidas/" + partida.getId();
+            postStatus(rutaPartida + "/iniciar", "", 200);
+            postStatus(rutaPartida + "/bajas", new Baja("J1", "bot-1"), 201);
+
+            int hilos = 4;
+            CountDownLatch salidaCierre = new CountDownLatch(1);
+            ExecutorService pool = Executors.newFixedThreadPool(hilos);
+            try {
+                List<Callable<Integer>> tareasCierre = new ArrayList<>();
+                for (int i = 0; i < hilos; i++) {
+                    tareasCierre.add(() -> {
+                        salidaCierre.await();
+                        try (Response r = post(rutaPartida + "/finalizar", "")) {
+                            return r.getStatus();
+                        }
+                    });
+                }
+                List<Future<Integer>> futurosCierre = new ArrayList<>();
+                for (Callable<Integer> tarea : tareasCierre) futurosCierre.add(pool.submit(tarea));
+                salidaCierre.countDown();
+
+                int okCierre = 0;
+                int conflictoCierre = 0;
+                for (Future<Integer> f : futurosCierre) {
+                    int code = f.get();
+                    if (code == 200) okCierre++;
+                    else if (code == 409) conflictoCierre++;
+                }
+                assertEquals(1, okCierre);
+                assertEquals(3, conflictoCierre);
+
+                postStatus(rutaPartida + "/finalizar", "", 409);
+
+                // Recompensa de 1 baja = 100 exp y 60 créditos, aplicada una sola vez
+                Perfil trasCierre = target.path("jugadores/J1").request().get(Perfil.class);
+                assertEquals(100, trasCierre.getExperiencia());
+                assertEquals(60, trasCierre.getCreditos());
+
+                // 4 reintentos HTTP simultáneos de recompensas: todos devuelven 200 sin duplicar saldo
+                CountDownLatch salidaRecompensas = new CountDownLatch(1);
+                List<Callable<Boolean>> tareasRecompensa = new ArrayList<>();
+                for (int i = 0; i < hilos; i++) {
+                    tareasRecompensa.add(() -> {
+                        salidaRecompensas.await();
+                        try (Response r = post("resultados/" + partida.getId() + "/recompensas", "")) {
+                            assertEquals(200, r.getStatus());
+                            return r.readEntity(Scoreboard.class).isProcesado();
+                        }
+                    });
+                }
+                List<Future<Boolean>> futurosRecompensa = new ArrayList<>();
+                for (Callable<Boolean> tarea : tareasRecompensa) futurosRecompensa.add(pool.submit(tarea));
+                salidaRecompensas.countDown();
+
+                for (Future<Boolean> f : futurosRecompensa) assertTrue(f.get());
+
+                Perfil finalPerfil = target.path("jugadores/J1").request().get(Perfil.class);
+                assertEquals(100, finalPerfil.getExperiencia());
+                assertEquals(60, finalPerfil.getCreditos());
+            } finally {
+                pool.shutdownNow();
+            }
+        }
     }
 
     public static class JugadoresHttp {
