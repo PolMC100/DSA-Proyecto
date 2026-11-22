@@ -134,7 +134,16 @@ public class JuegoServiceTest {
             try (Response response = target.path("status").request().get()) { assertEquals(200, response.getStatus()); }
             try (Response response = target.path("swagger.json").request().get()) {
                 assertEquals(200, response.getStatus());
-                assertTrue(response.readEntity(String.class).contains("/tienda/comprar"));
+                String spec = response.readEntity(String.class);
+                assertTrue(spec.contains("/tienda/comprar"));
+                assertTrue(spec.contains("/auth/login"));
+            }
+            try (Response response = client.target(target.getUri().resolve("/swagger/")).request().get()) {
+                assertEquals(200, response.getStatus());
+                assertTrue(response.getMediaType().isCompatible(MediaType.TEXT_HTML_TYPE));
+                String html = response.readEntity(String.class);
+                assertTrue(html.contains("/dsaApp/swagger.json"));
+                assertTrue(html.contains("swagger-ui-bundle.js"));
             }
         }
 

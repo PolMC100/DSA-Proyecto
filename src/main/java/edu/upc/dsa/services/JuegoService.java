@@ -12,7 +12,7 @@ import javax.ws.rs.core.Response;
 import java.util.*;
 
 /** Recurso REST único, como DroneService en la referencia. */
-@Api(value = "/", description = "Jugadores, tienda, partidas y resultados")
+@Api(value = "/", description = "Autentificación, Jugadores, tienda, partidas y resultados")
 @Path("/")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -22,11 +22,13 @@ public class JuegoService {
     @GET
     @Path("status")
     @ApiOperation(value = "Comprobar disponibilidad", response = Status.class)
+    @ApiResponses({@ApiResponse(code=200, message ="Servidor activo")})
     public Status getStatus() { return new Status("ok"); }
 
     @POST
     @Path("auth/register")
     @ApiOperation(value = "Registrar un jugador con usuario y contraseña", response = Perfil.class)
+    @ApiResponses({@ApiResponse(code = 201, message = "Jugador registrado"), @ApiResponse(code = 400, message = "Credenciales inválidas"), @ApiResponse(code = 409, message = "Usuario duplicado")})
     public Response registrarJugador(Credenciales datos) {
         if (datos == null) throw new IllegalArgumentException("Hacen falta usuario y contraseña");
         return Response.status(201).entity(Perfil.from(manager.registrarJugador(datos.getUsuario(), datos.getPassword())))
@@ -36,6 +38,7 @@ public class JuegoService {
     @POST
     @Path("auth/login")
     @ApiOperation(value = "Comprobar usuario y contraseña", response = Perfil.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Login correcto"), @ApiResponse(code = 400, message = "Credenciales inválidas"), @ApiResponse(code = 401, message = "Usuario o contraseña incorrectos")})
     public Response login(Credenciales datos) {
         if (datos == null) throw new IllegalArgumentException("Hacen falta usuario y contraseña");
         try {
@@ -61,7 +64,8 @@ public class JuegoService {
 
     @GET
     @Path("jugadores")
-    @ApiOperation(value = "Listar todos los jugadores registrados", response = Perfil.class, responseContainer = "Lista")
+    @ApiOperation(value = "Listar todos los jugadores registrados", response = Perfil.class, responseContainer = "List")
+    @ApiResponses({@ApiResponse(code = 200, message = "Lista de jugadores")})
     public Response getJugadores() {
         List<Perfil> perfiles = new ArrayList<>();
         for (Jugador j : manager.getJugadores()) {
@@ -73,6 +77,7 @@ public class JuegoService {
     @GET
     @Path("jugadores/{id}")
     @ApiOperation(value = "Consultar perfil y progresión", response = Perfil.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Inventario del jugador"), @ApiResponse(code = 400, message = "Identificador inválido"), @ApiResponse(code = 404, message = "Jugador inexistente")})
     public Perfil getJugador(@PathParam("id") String id) { return Perfil.from(manager.getJugador(id)); }
 
     @GET
@@ -85,6 +90,9 @@ public class JuegoService {
     @POST
     @Path("jugadores/{id}/inventario/granadas/{nombre}/usar")
     @ApiOperation(value = "Consumir una granada", response = ContenidoInventario.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Granada consumida"),
+            @ApiResponse(code = 400, message = "Parámetros inválidos"), @ApiResponse(code = 404, message = "Jugador inexistente"),
+            @ApiResponse(code = 409, message = "No quedan granadas de ese tipo")})
     public ContenidoInventario usarGranada(@PathParam("id") String id, @PathParam("nombre") String nombre) {
         if (!manager.consumirGranada(id, nombre)) throw new ClientErrorException("No quedan granadas de " + nombre, 409);
         return getInventario(id);
@@ -93,6 +101,7 @@ public class JuegoService {
     @GET
     @Path("tienda/catalogo")
     @ApiOperation(value = "Consultar catálogo", response = Catalogo.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Catálogo disponible")})
     public Catalogo getCatalogo() {
         return new Catalogo(manager.getArmas().values(), manager.getGranadas().values(), manager.getComplementos().values());
     }
@@ -122,6 +131,8 @@ public class JuegoService {
     @POST
     @Path("partidas/crear/{jugadorId}")
     @ApiOperation(value = "Crear una partida con nueve bots", response = Partida.class)
+    @ApiResponses({@ApiResponse(code = 201, message = "Partida creada"),
+            @ApiResponse(code = 400, message = "Identificador inválido"), @ApiResponse(code = 404, message = "Humano inexistente")})
     public Response crearPartidaRapida(@PathParam("jugadorId") String jugadorId) {
         return Response.status(201).entity(manager.crearPartida(jugadorId, Partida.MAX_PARTICIPANTES - 1)).build();
     }
@@ -129,6 +140,8 @@ public class JuegoService {
     @GET
     @Path("partidas")
     @ApiOperation(value = "Listar partidas; admite filtro por estado", response = Partida.class, responseContainer = "List")
+    @ApiResponses({@ApiResponse(code = 200, message = "Lista de partidas"),
+            @ApiResponse(code = 400, message = "Estado inválido")})
     public Response getPartidas(@QueryParam("estado") String estado) {
         List<Partida> partidas = estado == null || estado.isBlank() ? manager.getPartidas()
                 : manager.getPartidasPorEstado(Estado.valueOf(estado.trim().toUpperCase(Locale.ROOT)));
@@ -138,16 +151,24 @@ public class JuegoService {
     @GET
     @Path("partidas/{id}")
     @ApiOperation(value = "Consultar partida", response = Partida.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Partida encontrada"),
+            @ApiResponse(code = 404, message = "Partida inexistente")})
     public Partida getPartida(@PathParam("id") String id) { return manager.getPartida(id); }
 
     @POST
     @Path("partidas/{id}/iniciar")
     @ApiOperation(value = "Iniciar partida", response = Partida.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Partida iniciada"),
+            @ApiResponse(code = 404, message = "Partida inexistente"), @ApiResponse(code = 409, message = "La partida no está pendiente")})
     public Partida iniciarPartida(@PathParam("id") String id) { return manager.iniciarPartida(id); }
 
     @POST
     @Path("partidas/{id}/bajas")
     @ApiOperation(value = "Registrar una baja y actualizar el marcador")
+    @ApiResponses({@ApiResponse(code = 201, message = "Baja registrada"),
+            @ApiResponse(code = 400, message = "Datos inválidos o eliminación propia"),
+            @ApiResponse(code = 404, message = "Partida o participante inexistente"),
+            @ApiResponse(code = 409, message = "Partida no en curso o participante muerto")})
     public Response registrarBaja(@PathParam("id") String id, Baja baja) {
         if (baja == null) throw new IllegalArgumentException("Hacen falta idAsesino e idVictima");
         manager.registrarBaja(id, baja.getIdAsesino(), baja.getIdVictima());
@@ -157,6 +178,10 @@ public class JuegoService {
     @POST
     @Path("partidas/{id}/reapariciones")
     @ApiOperation(value = "Reaparecer en una partida en curso")
+    @ApiResponses({@ApiResponse(code = 200, message = "Participante reaparecido"),
+            @ApiResponse(code = 400, message = "Falta idJugador"),
+            @ApiResponse(code = 404, message = "Partida o participante inexistente"),
+            @ApiResponse(code = 409, message = "Partida no en curso o participante ya vivo")})
     public Response reaparecer(@PathParam("id") String id, Reaparicion datos) {
         if (datos == null || datos.getIdJugador() == null || datos.getIdJugador().isBlank()) {
             throw new IllegalArgumentException("Hace falta idJugador");
@@ -168,30 +193,40 @@ public class JuegoService {
     @POST
     @Path("partidas/{id}/finalizar")
     @ApiOperation(value = "Finalizar partida y aplicar recompensas", response = Partida.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Partida finalizada"),
+            @ApiResponse(code = 404, message = "Partida inexistente"), @ApiResponse(code = 409, message = "La partida no está en curso")})
     public Partida finalizarPartida(@PathParam("id") String id) { return manager.finalizarPartida(id); }
 
     @GET
     @Path("partidas/{id}/tiempo")
     @ApiOperation(value = "Consultar segundos restantes", response = Tiempo.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Tiempo restante"),
+            @ApiResponse(code = 404, message = "Partida inexistente")})
     public Tiempo getTiempo(@PathParam("id") String id) { return new Tiempo(id, manager.getSegundosRestantes(id)); }
 
     @GET
     @Path("resultados/scoreboard/{partidaId}")
     @ApiOperation(value = "Consultar clasificación y recompensas", response = Scoreboard.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Marcador de la partida"),
+            @ApiResponse(code = 404, message = "Partida inexistente")})
     public Scoreboard getScoreboard(@PathParam("partidaId") String id) { return manager.getScoreboard(id); }
 
     @POST
     @Path("resultados/{partidaId}/recompensas")
     @ApiOperation(value = "Reintentar pagos pendientes sin duplicarlos", response = Scoreboard.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Recompensas aplicadas o ya procesadas"),
+            @ApiResponse(code = 404, message = "Partida inexistente"), @ApiResponse(code = 409, message = "La partida aún no ha finalizado")})
     public Scoreboard aplicarRecompensas(@PathParam("partidaId") String id) {
         manager.aplicarRecompensas(id);
         return manager.getScoreboard(id);
     }
 
     // Los cuerpos y vistas pequeños se agrupan aquí; no tienen lógica de negocio.
-
+    @ApiModel(description = "Usuario y contrasña para registro o login")
     public static class Credenciales {
+        @ApiModelProperty(example = "jugador1", required= true)
         private String usuario;
+        @ApiModelProperty(example = "1234", required = true)
         private String password;
 
         public Credenciales() { }
@@ -201,16 +236,21 @@ public class JuegoService {
         public void setPassword(String password) { this.password = password; }
     }
 
+    @ApiModel(description = "Perfil del jugador")
     public static class Perfil {
         public static Perfil from(edu.upc.dsa.domain.models.Jugador jugador) {
             return new Perfil(jugador.getIdJugador(), jugador.getNombre(), jugador.getNivel(),
                     jugador.getExperiencia(), jugador.getCreditos());
         }
-
+        @ApiModelProperty(example = "J1")
         private String id;
+        @ApiModelProperty(example = "Jugador 1", required = true)
         private String nombre;
+        @ApiModelProperty(example ="1")
         private int nivel;
+        @ApiModelProperty(example ="0")
         private int experiencia;
+        @ApiModelProperty(example ="0")
         private int creditos;
 
         public Perfil() {
@@ -256,9 +296,13 @@ public class JuegoService {
         }
     }
 
+    @ApiModel(description = "Datos de compra en la tienda")
     public static class Compra {
+        @ApiModelProperty(example = "J1", required = true)
         private String jugadorId;
+        @ApiModelProperty(example = "Pistola", required = true)
         private String itemId;
+        @ApiModelProperty(example = "1")
         private int cantidad = 1;
 
         public Compra() {
@@ -293,8 +337,11 @@ public class JuegoService {
         }
     }
 
+    @ApiModel(description = "Datos para crear una partida")
     public static class CrearPartida {
+        @ApiModelProperty(example = "J1", required = true)
         private String idJugadorHumano;
+        @ApiModelProperty(example = "3", required = true)
         private int numBots;
 
         public CrearPartida() {
@@ -312,8 +359,11 @@ public class JuegoService {
         public void setNumBots(int numBots) { this.numBots = numBots; }
     }
 
+    @ApiModel(description = "Baja registrada en una partida")
     public static class Baja {
+        @ApiModelProperty(example = "J1", required = true)
         private String idAsesino;
+        @ApiModelProperty(example = "bot-1", required = true)
         private String idVictima;
 
         public Baja() {
@@ -331,7 +381,9 @@ public class JuegoService {
         public void setIdVictima(String idVictima) { this.idVictima = idVictima; }
     }
 
+    @ApiModel(description = "Jugador que reaparece en partida")
     public static class Reaparicion {
+        @ApiModelProperty(example = "bot-1", required = true)
         private String idJugador;
 
         public Reaparicion() {
