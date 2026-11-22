@@ -450,4 +450,12 @@ public class JuegoManagerImpl implements JuegoManager {
         experienciaPorNivel = 100;
         cargarCatalogoInicial();
     }
+    @Override
+    public synchronized void cargarDatosPrueba() {
+        limpiar();
+        Jugador tester = registrarJugador("tester", "1234"); // usuario y contrseña creados anteriormente
+        sumarExperienciaYCreditos(tester.getIdJugador(), 500, 20000);
+        registrarJugador("invitado", "1234"); // Segundo usuario de prueba
+        crearPartida(tester.getIdJugador(), 3);
+    }
 }

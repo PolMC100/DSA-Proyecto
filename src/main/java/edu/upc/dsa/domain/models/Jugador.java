@@ -19,7 +19,7 @@ public class Jugador {
     public Jugador() {
         this.vida = 100; // Valor inicial provisional, pendiente de acordar con el equipo.
         this.nivel = 1;
-        this.creditos = 20000;  //prueba
+        this.creditos = 0;
         this.inventario = new Inventario();
     }
 

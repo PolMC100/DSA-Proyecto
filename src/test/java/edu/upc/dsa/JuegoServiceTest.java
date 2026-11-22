@@ -364,6 +364,23 @@ public class JuegoServiceTest {
                 Assert.assertEquals(70, dto.getCreditos());
             }
         }
+        @Test
+        public void listarJugadoresConDatosDePruebaDevuelveTodosLosPerfiles() {
+            manager.cargarDatosPrueba();
+            try (Response response = target.request().get()) {
+                assertEquals(200, response.getStatus());
+                Perfil[] perfiles = response.readEntity(Perfil[].class);
+                assertEquals(2, perfiles.length);
+                boolean encontradoTester = false;
+                for (Perfil p : perfiles) {
+                    if ("tester".equals(p.getNombre())) {
+                        encontradoTester = true;
+                        assertEquals(20000, p.getCreditos());
+                    }
+                }
+                assertTrue(encontradoTester);
+            }
+        }
     }
 
     public static class PartidasHttp {
@@ -477,6 +494,25 @@ public class JuegoServiceTest {
             Assert.assertEquals(404, post("P999/iniciar", ""));
             try (Response r = partidas.path("P999/tiempo").request().get()) {
                 Assert.assertEquals(404, r.getStatus());
+            }
+        }
+        @Test
+        public void crearPartidaRapidaPorJugadorCreaPartidaConBotsYValidaInexistente() {
+            JuegoManagerImpl.getInstance().registrarJugador("J1", "Tester", false);
+
+            try (Response response = partidas.path("crear/J1")
+                    .request(MediaType.APPLICATION_JSON)
+                    .post(Entity.json(""))) {
+                assertEquals(201, response.getStatus());
+                Partida partida = response.readEntity(Partida.class);
+                assertNotNull(partida.getId());
+                assertEquals(10, partida.getParticipantes().size());
+            }
+
+            try (Response response = partidas.path("crear/no-existe")
+                    .request(MediaType.APPLICATION_JSON)
+                    .post(Entity.json(""))) {
+                assertEquals(404, response.getStatus());
             }
         }
     }

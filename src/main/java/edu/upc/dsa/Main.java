@@ -10,6 +10,7 @@ import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
 import org.glassfish.jersey.moxy.json.MoxyJsonFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.ServerProperties;
+import edu.upc.dsa.domain.repository.JuegoManagerImpl;
 
 import java.io.IOException;
 import java.net.URI;
@@ -71,7 +72,8 @@ public final class Main {
     }
 
     public static void main(String[] args) throws IOException {
-        HttpServer server = startServer();
+        JuegoManagerImpl.getInstance().cargarDatosPrueba();
+        final HttpServer server = startServer();
         Thread shutdownHook = new Thread(() -> stopServer(server), "dsa-shutdown");
         Runtime.getRuntime().addShutdownHook(shutdownHook);
         LOGGER.info("Pulsa Enter o Ctrl+C para detener el servidor");

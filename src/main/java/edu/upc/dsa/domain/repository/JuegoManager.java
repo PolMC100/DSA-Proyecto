@@ -45,4 +45,5 @@ public interface JuegoManager {
 
     /** Restablece los datos y el catálogo; no reutiliza identificadores de partida. */
     void limpiar();
+    void cargarDatosPrueba(); // Se crea una partida pre cargada para hacer pruebas y test hasta que esté todo funcionando
 }
