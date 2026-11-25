@@ -1,8 +1,9 @@
 # Diagramas de clases
 
 La estructura sigue el componente único de `DSA-Minim-Real`: servicio REST,
-interfaz del gestor, implementación en memoria y modelos. Se omiten accesores,
-constructores y logs. Las reglas, rutas y tareas están en el [README](../README.md).
+interfaz del gestor, implementación en memoria y modelos. Los diagramas solo
+muestran atributos: se omiten métodos, constructores y loggers. Las reglas, rutas
+y tareas están en el [README](../README.md).
 
 ## Componente y API
 
@@ -10,27 +11,23 @@ constructores y logs. Las reglas, rutas y tareas están en el [README](../README
 %%{init: {"theme":"dark"}}%%
 classDiagram
     direction LR
-    class Main
-    class JuegoService
+    class Main {
+        +String BASE_URI$
+    }
+    class JuegoService {
+        -JuegoManager manager
+    }
     class MyExceptionMapper
+    class ErrorEntity {
+        -int code
+        -String message
+    }
     class JuegoManager {
         <<interface>>
-        +registrarJugador(String id, String nombre, boolean bot) Jugador
-        +getJugador(String id) Jugador
-        +comprar(String jugadorId, String itemId, int cantidad) Jugador
-        +consumirGranada(String jugadorId, String nombre) boolean
-        +crearPartida(String humano, int bots) Partida
-        +iniciarPartida(String id) Partida
-        +registrarBaja(String partida, String asesino, String victima) void
-        +reaparecer(String partida, String jugador) void
-        +finalizarPartida(String id) Partida
-        +getSegundosRestantes(String id) long
-        +getScoreboard(String id) Scoreboard
-        +aplicarRecompensas(String id) void
-        +limpiar() void
     }
     class JuegoManagerImpl {
         -JuegoManagerImpl INSTANCE$
+        -Comparator CLASIFICACION$
         -Map jugadores
         -Map catalogo
         -Map partidas
@@ -39,22 +36,25 @@ classDiagram
         -LongSupplier reloj
         -int experienciaPorNivel
         -long contadorPartidas
-        +getInstance() JuegoManagerImpl$
     }
     Main ..> JuegoService : registra el paquete services
     Main ..> MyExceptionMapper : registra
-    JuegoService --> JuegoManager : delega
+    MyExceptionMapper ..> ErrorEntity : responde con
+    JuegoService --> JuegoManager : manager
+    JuegoService ..> JuegoManagerImpl : getInstance
     JuegoManagerImpl ..|> JuegoManager
     style Main stroke:#a6a0ff
     style MyExceptionMapper stroke:#a6a0ff
+    style ErrorEntity stroke:#a6a0ff
     style JuegoService stroke:#00c9e5
     style JuegoManager stroke:#d779ed
     style JuegoManagerImpl stroke:#d779ed
 ```
 
-El gestor también expone las consultas de catálogo, perfiles, partidas y progresión
-y la actualización de experiencia y créditos. El contrato completo está en
-`JuegoManager.java`. Las operaciones públicas de la implementación se sincronizan.
+`JuegoManager` agrupa el registro y la autenticación con usuario y contraseña,
+los perfiles y la progresión, el catálogo y las compras, las partidas y los
+resultados. Sus operaciones no se dibujan; el contrato completo está en
+`JuegoManager.java`. `ErrorEntity` está anidada en `MyExceptionMapper`. Las operaciones públicas de la implementación se sincronizan.
 Las consultas devuelven copias, y cada compra prepara el inventario antes de
 guardar descuento e inventario conjuntamente.
 
@@ -79,29 +79,50 @@ classDiagram
     class Jugador {
         -String idJugador
         -String nombre
+        -String usuario
+        -String password
         -boolean bot
         -int vida
         -int experiencia
         -int nivel
         -int creditos
+        -Inventario inventario
     }
     class Inventario {
         -List~Arma~ armas
-        -Map granadas
+        -Map~String, Integer~ granadas
         -List~Complemento~ complementos
-        +addObjeto(Comprable objeto, int cantidad) void
-        +useGranada(String nombre) int
     }
     class Comprable {
         <<interface>>
-        +getNombre() String
-        +getPrecio() Integer
-        +getNivelRequerido() Integer
     }
-    class Arma
-    class Granada
-    class Complemento
+    class Arma {
+        -String nombre
+        -Integer ammo
+        -Integer cadencia
+        -Integer damage
+        -Integer precio
+        -Integer nivelRequerido
+    }
+    class Granada {
+        -String nombre
+        -Integer damage
+        -Double radio
+        -String efecto
+        -Integer duracionEfecto
+        -Integer precio
+        -Integer nivelRequerido
+    }
+    class Complemento {
+        -String nombre
+        -String tipo
+        -String efecto
+        -Integer precio
+        -Integer nivelRequerido
+    }
     class Partida {
+        +int MAX_PARTICIPANTES$
+        +int DURACION_SEGUNDOS$
         -String id
         -String idJugadorHumano
         -List~Participante~ participantes
@@ -161,8 +182,12 @@ classDiagram
 
 `Comprable` es una interfaz dentro de `Inventario`; `Participante` y `Estado` están
 dentro de `Partida`. Se muestran por separado para explicar sus relaciones,
-pero no tienen archivos Java propios. Los perfiles gestionados empiezan con
-inventario; el modelo conserva el setter que permite un inventario nulo por compatibilidad.
+pero no tienen archivos Java propios. `Comprable` solo declara el nombre, el
+precio y el nivel requerido mediante métodos, por eso aparece sin atributos.
+Los perfiles gestionados empiezan con inventario; el modelo conserva el setter
+que permite un inventario nulo por compatibilidad. `usuario` y `password` solo
+los rellena el registro con credenciales; `password` no se serializa en JSON
+(`@XmlTransient`) y los bots no pueden iniciar sesión.
 
 Los bots son participantes temporales. Las estadísticas se calculan para todos,
 pero solo se actualiza la progresión de los humanos. Los pagos se registran
@@ -175,6 +200,7 @@ Las clases de transporte están agrupadas dentro de `JuegoService`:
 
 | Clase anidada | Campos o contenido |
 | --- | --- |
+| `Credenciales` | usuario y password, para registro e inicio de sesión. |
 | `Perfil` | id, nombre, nivel, experiencia y créditos. |
 | `Compra` | jugadorId, itemId y cantidad (1 por defecto). |
 | `CrearPartida` | idJugadorHumano y numBots. |
@@ -182,7 +208,7 @@ Las clases de transporte están agrupadas dentro de `JuegoService`:
 | `Reaparicion` | idJugador. |
 | `Tiempo` | idPartida y segundosRestantes. |
 | `Catalogo` | Listas de armas, granadas y complementos. |
-| `ContenidoInventario` | Compras y lista de granadas con nombre y cantidad. |
+| `ContenidoInventario` | Armas, complementos y granadas (`GranadaCantidad`: nombre y cantidad). |
 | `Status` | status. |
 
 `MyExceptionMapper.ErrorEntity` conserva el JSON de error con `code` y `message`.
